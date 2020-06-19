@@ -34,7 +34,7 @@
         <!-- Template Language -->
 
         <!-- Runtime Deps -->
-        <spring.version>4.2.4.RELEASE</spring.version>
+        <spring.version>5.2.7.RELEASE</spring.version>
         <dubbo.version>2.5.3</dubbo.version>
         <netty.version>3.2.5.Final</netty.version>
         <zookeeper.version>3.3.3</zookeeper.version>
