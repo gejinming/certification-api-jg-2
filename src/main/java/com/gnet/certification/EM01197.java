@@ -169,7 +169,6 @@ public class EM01197 extends BaseApi implements IApi {
 			ccCourse.put("exercisesHours",temp.getBigDecimal("exercises_hours"));
 			ccCourse.put("dicussHours", temp.getBigDecimal("dicuss_hours"));
 			ccCourse.put("extracurricularHours", temp.getBigDecimal("extracurricular_hours"));
-			
 			ccCourse.put("moduleId", temp.get("module_id"));
 			ccCourse.put("moduleName", temp.get("moduleName"));
 			ccCourse.put("indepentHours", temp.get("indepent_hours"));
