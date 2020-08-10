@@ -35,6 +35,9 @@ public class EM01201 extends BaseApi implements IApi {
         Long courseGradeComposeId = paramsLongFilter(param.get("courseGradeComposeId"));
         String name = paramsStringFilter(param.get("name"));
         BigDecimal score = paramsBigDecimalFilter(param.get("score"));
+        String remark = paramsStringFilter(param.get("remark"));
+        //3多批次题目录入，4多批次指标点直接录入
+        Integer inputType = paramsIntegerFilter(param.get("inputType"));
         IdGenerate idGenerate = SpringContextHolder.getBean(IdGenerate.class);
         Date date = new Date();
         if(param.containsKey("courseGradeComposeId") && courseGradeComposeId == null) {
@@ -51,6 +54,8 @@ public class EM01201 extends BaseApi implements IApi {
         ccCourseGradecomposeBatch.set("score",score);
         ccCourseGradecomposeBatch.set("course_gradecompose_id",courseGradeComposeId);
         ccCourseGradecomposeBatch.set("is_del", Boolean.FALSE);
+        ccCourseGradecomposeBatch.set("input_type",inputType);
+        ccCourseGradecomposeBatch.set("remark",remark);
 
         if(!ccCourseGradecomposeBatch.save()){
             result.put("isSuccess", false);
