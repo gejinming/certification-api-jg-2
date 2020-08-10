@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<certification>
+    <dicts>
+        <dic type="type" name="用户类型">
+            <key value="1" label="管理员" />
+        </dic>
+        
+        <dic type="sex" name="性别">
+        	<key value="0" label="男" />
+        	<key value="1" label="女" />
+        </dic>
+        
+        <dic type="sysOffice" name="系统部门">
+            <key value="0" label="学校" />
+            <key value="1" label="学院" />
+            <key value="2" label="专业" />
+            <key value="3" label="行政班" />
+        </dic>
+        
+        <dic type="specializedFields" name="专业门类">
+             <key value="1" label="理科" />
+             <key value="2" label="文科" />
+             <key value="3" label="工科" />
+         </dic>
+         
+         <dic type="awardDegree" name="授予学位">
+         	<key value="1" label="学士" />
+             <key value="2" label="硕士" />
+             <key value="3" label="博士" />
+         </dic>
+         
+         <dic type="educationLevel" name="培养层次">
+         	<key value="1" label="本科" />
+             <key value="2" label="硕士" />
+             <key value="3" label="博士" />
+         </dic>
+
+        <dic type="studentStatue" name="学籍状态">
+            <key value="1" label="在读" />
+            <key value="2" label="毕业" />
+            <key value="3" label="休学" />
+            <key value="4" label="转学" />
+            <key value="5" label="退学(辍学)" />
+        </dic>
+        
+        <dic type="termType" name="学期类型">
+            <key value="1" label="长学期" />
+            <key value="2" label="短学期" />
+        </dic>
+        
+        <dic type="term" name="学期">
+            <key value="1" label="第一学期" />
+            <key value="2" label="第二学期" />
+        </dic>
+        
+        <dic type="courseType" name="课程类型">
+            <key value="1" label="理论课" />
+            <key value="2" label="实践课" />
+        </dic>
+        
+        <dic type="state" name="专业认证版本状态">
+            <key value="1" label="编辑状态" />
+            <key value="2" label="发布状态" />
+            <key value="3" label="作废状态" />
+        </dic>
+
+        <dic type="subjectImport" name="题目导入模板">
+            <key value="1" label="题号" />
+            <key value="2" label="分值" />
+            <key value="3" label="支持课程目标" />
+            <key value="4" label="题目详情" />
+            <key value="5" label="备注" />
+        </dic>
+
+        <dic type="subjectScoreImport" name="题目成绩导入模板">
+            <key value="1" label="序号" />
+            <key value="2" label="学号" />
+            <key value="3" label="姓名" />
+            <key value="4" label="教学班名称" />
+        </dic>
+        
+        <dic type="versionType" name="专业认证版本类型">
+            <key value="1" label="大版本" />
+            <key value="2" label="小版本" />
+        </dic>
+       
+       <dic type="courseResultType" name="课程达成度分析法类型">
+        	<key value="1" label="考核成绩分析法" />
+            <key value="2" label="评分表分析法" />
+        </dic>
+        
+        <dic type="educationType" name="进修类型">
+        	<key value="1" label="国内进修" />
+            <key value="2" label="国外进修" />
+        </dic>
+        
+        <dic type="highestDegrees" name="最高学位">
+        	<key value="1" label="学士" />
+            <key value="2" label="硕士" />
+            <key value="3" label="博士" />
+            <key value="4" label="其他" />
+        </dic>
+        
+        <dic type="jobTitle" name="职称">
+        	<key value="1" label="教授" />
+            <key value="2" label="副教授" />
+            <key value="3" label="讲师" />
+            <key value="4" label="其他" />
+        </dic>
+        
+        <dic type="statisticJobTitle" name="职称">
+        	<key value="1" label="正高" />
+            <key value="2" label="副高" />
+            <key value="3" label="中级" />
+            <key value="4" label="其他" />
+        </dic>
+        
+        <dic type="courseOutlineStatus" name="课程大纲状态">
+        	<key value="0" label="未分配" />
+            <key value="1" label="已分配未确认" />
+            <key value="2" label="未开始" />
+            <key value="3" label="未提交" />
+            <key value="4" label="待审核" />
+            <key value="5" label="审核通过" />
+            <key value="6" label="审核驳回" />
+        </dic>
+
+        <dic type="planCoursezoneType" name="培养计划课程区域类型">
+       		<key value="1" label="课程层次" />
+            <key value="2" label="课程性质" />
+            <key value="3" label="专业方向" />
+            <key value="4" label="所属模块" />
+        </dic>
+        
+        <dic type="planType" name="培养计划类型">
+        	<key value="1" label="理论教学" />
+            <key value="2" label="实践教学" />
+        </dic>
+        
+         <dic type="inputScoreType" name="指标点录入成绩类型">
+        	<key value="1" label="指标点成绩直接录入" />
+            <key value="2" label="题目汇总得到指标点成绩" />
+        </dic>
+        
+         <dic type="evaluteLevel" name="考评点层次">
+        	<key value="2" label="二级制" />
+            <key value="5" label="五级制" />
+        </dic>
+        
+         <dic type="evaluteLevelTow" name="二级制">
+        	<key value="1" label="及格(1)" />
+            <key value="2" label="不及格(0.5)" />
+        </dic>
+        
+         <dic type="evaluteLevelFive" name="五级制">
+        	<key value="1" label="优(1)" />
+            <key value="2" label="良(0.8)" />
+            <key value="3" label="中(0.6)" />
+            <key value="4" label="及格(0.4)" />
+            <key value="5" label="不及格(0.2)" />
+        </dic>
+         <dic type="evaluteLevelTowValue" name="二级制">
+        	<key value="1" label="及格" />
+            <key value="2" label="不及格" />
+        </dic>
+        
+         <dic type="evaluteLevelFiveValue" name="五级制">
+        	<key value="1" label="优" />
+            <key value="2" label="良" />
+            <key value="3" label="中" />
+            <key value="4" label="及格" />
+            <key value="5" label="不及格" />
+        </dic>
+        
+         <dic type="studentIndicationRemark" name="备注">
+        	<key value="0" label="无" />
+            <key value="1" label="缺考" />
+            <key value="2" label="补考" />
+        </dic>
+        
+         <dic type="evaluteType" name="考评点类型">
+        	<key value="1" label="平时成绩" />
+            <key value="2" label="期中成绩" />
+            <key value="3" label="期末成绩" />
+            <key value="4" label="实验成绩" />
+        </dic>
+
+        <dic type="hoursType" name="学时类型">
+            <key value="1" label="理论学时" />
+            <key value="2" label="上机学时" />
+            <key value="3" label="实验学时" />
+            <key value="4" label="实践学时" />
+            <key value="5" label="课内学时" />
+            <key value="6" label="天数" />
+            <key value="7" label="周数" />
+            <key value="8" label="研讨学时" />
+            <key value="9" label="习题学时" />
+        </dic>
+
+        <dic type="hoursField" name="学时字段">
+            <key value="1" label="theoryHours" />
+            <key value="2" label="operateComputerHours" />
+            <key value="3" label="experimentHours" />
+            <key value="4" label="practiceHours" />
+            <key value="8" label="dicussHours" />
+            <key value="9" label="exercisesHours" />
+        </dic>
+
+        <dic type="headerType" name="表头类型">
+            <key value="1" label="文本" />
+            <key value="2" label="数字" />
+            <key value="3" label="小计" />
+            <key value="4" label="课程目标选择" />
+            <key value="5" label="毕业要求指标点选择" />
+        </dic>
+
+        <dic type="termTypeName" name="学期类型名称">
+            <key value="1" label="长" />
+            <key value="2" label="短" />
+        </dic>
+
+    </dicts>
+</certification>
