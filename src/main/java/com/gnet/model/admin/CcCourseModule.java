@@ -1,5 +1,6 @@
 package com.gnet.model.admin;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.gnet.model.DbModel;
@@ -87,6 +88,15 @@ public class CcCourseModule extends DbModel<CcCourseModule>{
 		sql.append("inner join cc_plan_course_zone cpcz on cpcz.zone_id = ccm.id ");
 		sql.append("where cpcz.id = ? and ccm.is_del = ?");
 		return findFirst(sql.toString(), zoneId, DEL_NO);
+	}
+
+	public CcCourseModule findByModel(Long planId,String name){
+		ArrayList<Object> parms = new ArrayList<>();
+		StringBuilder sql = new StringBuilder("select * from " + tableName + " where plan_id=? and module_name=? and is_del=0 ");
+		parms.add(planId);
+		parms.add(name);
+		return findFirst(sql.toString(),parms.toArray());
+
 	}
 
 }

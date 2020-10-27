@@ -431,4 +431,24 @@ public class CcStudent extends DbModel<CcStudent> {
 		param.add(Boolean.FALSE);
 		return findFirst(sql.toString(), param.toArray());
 	}
+	/*
+	 * @param edclassId
+	 * @return java.util.List<com.gnet.model.admin.CcStudent>
+	 * @author Gejm
+	 * @description: 根据教学班id查询其中学生所属的行政班级名称
+	 * @date 2020/8/17 11:01
+	 */
+	public List<CcStudent> findClassName(Long edclassId){
+		List<Object> param = Lists.newArrayList();
+		StringBuilder sql = new StringBuilder("SELECT clazz.NAME className FROM cc_student cs ");
+		sql.append("INNER JOIN cc_class cc ON cc.id = cs.class_id and cc.is_del=0 ");
+		sql.append("INNER JOIN sys_office clazz ON clazz.id = cc.id and clazz.is_del=0 ");
+		sql.append("INNER JOIN sys_office major ON major.id = clazz.parentid and   major.is_del=0 ");
+		sql.append("INNER JOIN cc_educlass_student ces on ces.student_id=cs.id and ces.is_del=0 ");
+		sql.append("WHERE cs.is_del =0 and ces.class_id=? ");
+		param.add(edclassId);
+		sql.append("group by clazz.NAME order by  clazz.NAME ");
+		return find(sql.toString(), param.toArray());
+	}
+
 }

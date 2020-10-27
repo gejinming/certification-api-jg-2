@@ -92,7 +92,7 @@ public class EM00555 extends BaseApi implements IApi {
 //		}
 //
 //		// 是否需要更新信息
-//		boolean needUpdate = needToUpdate(grade, versionId);
+		//boolean needUpdate = needToUpdate(grade, versionId);
 
 		// 返回结果
 		Map<String, Object> result = Maps.newHashMap();
@@ -106,8 +106,8 @@ public class EM00555 extends BaseApi implements IApi {
 		}
 		result.put("courseInfos", returnCourseInfos);
 		result.put("indicatioCourseInfos", indicatioCourseInfos);
-//		result.put("statisticsDate", statisticsDate);
-//		result.put("needUpdate", needUpdate);
+		//result.put("statisticsDate", statisticsDate);
+		//result.put("needUpdate", needUpdate);
 		return renderSUC(result, response, header);
 	}
 
@@ -191,14 +191,13 @@ public class EM00555 extends BaseApi implements IApi {
 	 * @param grade 年级
 	 * @param versionId 培养计划版本编号
 	 * @return
-	 */
+	 *//*
 	private boolean needToUpdate(Integer grade, Long versionId) {
-		return CcScoreStuIndigrade.dao.isNeedToUpdateByVersionAndGrade(versionId, grade)
-				|| CcStudentEvalute.dao.isNeedToUpdateByVersionAndGrade(versionId, grade)
-				|| CcReportCourse.dao.isNeedToUpdateByReportEduclassGrade(versionId, grade)
-				|| CcReportCourse.dao.isNeedToUpdateByReportEduclassEvalute(versionId, grade)
-				|| CcReportCourse.dao.isNeedToUpdateByStudentEvalute(versionId, grade)
-				|| CcReportCourse.dao.isNeedToUpdateByScoreStuIndigrade(versionId, grade);
-	}
+		List<CcScoreStuIndigrade> needToUpdate = CcScoreStuIndigrade.dao.findNeedToUpdate(versionId, grade);
+		if (needToUpdate.size()>0){
+			return true;
+		}
+		return false;
+	}*/
 
 }

@@ -93,8 +93,8 @@ public class CcPlanCourseZone extends DbModel<CcPlanCourseZone> {
 		sql.append("left join cc_course_property_secondary ccps on ccps.id = cpcz.zone_id and ccps.is_del = ? ");
 		sql.append("left join cc_major_direction cmd on cmd.id = cpcz.zone_id and cmd.is_del = ? ");
 		sql.append("left join cc_course_module ccm on ccm.id = cpcz.zone_id and ccm.is_del = ? ");
-		sql.append("where cpcz.plan_id = ? and cpcz.plan_report_type = ? and cpcz.is_del = ? ");
-		sql.append("order by cpcz.sort desc, ccm.sum_group_id desc, cpcz.zone_id asc, cpcz.id asc");
+		sql.append("where cpcz.plan_id = ? and cpcz.plan_report_type = ? and cpcz.is_del = ?   ");
+		sql.append("order by cpcz.sort desc,cpcz.zone_type asc, ccm.sum_group_id desc, cpcz.zone_id asc, cpcz.id asc");
 		return find(sql.toString(), DEL_NO, DEL_NO, DEL_NO, DEL_NO, DEL_NO, DEL_NO, DEL_NO, planId, reportType, DEL_NO);
 	}
 	

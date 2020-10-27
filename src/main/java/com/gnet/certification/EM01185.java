@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 查看课程组表--限选列表
+ * 查看课程分组表--限选列表
  * 
  * @author gjm
  * 
@@ -102,8 +102,13 @@ public class EM01185 extends BaseApi implements IApi {
 			List<CcCourse> ccCoursegroupList=CcCourse.dao.coursesLists(0);
 			if(!ccCoursegroupList.isEmpty()){
 				for(CcCourse temp : ccCoursegroupList) {
+					Long groupMangeId = temp.getLong("course_group_mange_id");
 					List<CcCourse> tempList = courseGroupMap.get(temp.getLong("course_group_mange_id"));
-					tempList.add(temp);
+					if ( tempList!=null){
+						tempList.add(temp);
+					}
+
+
 				}
 			}
 		}

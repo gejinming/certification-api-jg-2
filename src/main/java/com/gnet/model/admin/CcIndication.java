@@ -213,4 +213,31 @@ public class CcIndication extends DbModel<CcIndication> {
 		sql.append("order by ci.sort ");
 		return find(sql.toString(), courseGradeComposeId, DEL_NO, DEL_NO);
 	}
+	/*
+	 * @param courseId
+	 * @return java.util.List<com.gnet.model.admin.CcIndication>
+	 * @author Gejm
+	 * @description: 查询课程的所有课程目标
+	 * @date 2020/8/25 11:56
+	 */
+	public List<CcIndication> findCourseIndicationReport(Long courseId){
+		StringBuilder sql = new StringBuilder("select ci.*  from " + tableName + " ci ");
+		sql.append("where ci.is_del = 0 and ci.course_id=? order by sort");
+		return find(sql.toString(), courseId);
+	}
+
+	/*
+	 * @param courseId
+	 * @return java.util.List<com.gnet.model.admin.CcIndication>
+	 * @author Gejm
+	 * @description: 查询课程的所有课程目标
+	 * @date 2020/8/25 11:56
+	 */
+	public List<CcIndication> findCourseIndicationPointReport(Long courseId){
+		StringBuilder sql = new StringBuilder("select ci.* ,cic.indication_id as pointId from " + tableName + " ci ");
+		sql.append("left join cc_course_target_indication cti on cti.indication_id=ci.id ");
+		sql.append("left join cc_indication_course cic on cic.id=cti.indication_course_id ");
+		sql.append("where ci.is_del = 0 and ci.course_id=? order by sort");
+		return find(sql.toString(), courseId);
+	}
 }

@@ -100,7 +100,9 @@ public class EM01191 extends BaseApi implements IApi {
 			if(!ccCoursegroupList.isEmpty()){
 				for(CcCourseGroupMange temp : ccCoursegroupList) {
 					List<CcCourseGroupMange> tempList = courseGroupMap.get(temp.getLong("teach_group_id"));
-					tempList.add(temp);
+					if ( tempList!=null){
+						tempList.add(temp);
+					}
 				}
 			}
 		}

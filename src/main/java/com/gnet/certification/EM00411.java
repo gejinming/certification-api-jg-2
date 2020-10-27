@@ -58,6 +58,7 @@ public class EM00411 extends BaseApi implements IApi  {
 		map.put("createDate", temp.get("create_date"));
 		map.put("modifyDate", temp.get("modify_date"));
 		map.put("name", temp.get("name"));
+		map.put("weight", temp.get("weight"));
 		map.put("score", temp.get("score"));
 		map.put("detail", temp.get("detail"));
 		map.put("remark", temp.get("remark"));

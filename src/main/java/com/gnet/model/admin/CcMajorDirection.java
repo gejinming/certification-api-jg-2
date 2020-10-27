@@ -108,4 +108,12 @@ public class CcMajorDirection extends DbModel<CcMajorDirection> {
 		return CcMajorDirection.dao.paginate(pageable, "select * ", exceptSql.toString(), params.toArray());
 	}
 
+	public CcMajorDirection findDirection(String name,Long planId){
+		List<Object> params = Lists.newArrayList();
+		StringBuilder sql = new StringBuilder("select * from " + CcMajorDirection.dao.tableName + " where name=? and plan_id=? and is_del=0");
+		params.add(name);
+		params.add(planId);
+		return findFirst(sql.toString(),params.toArray());
+
+	}
 }

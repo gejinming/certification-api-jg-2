@@ -53,8 +53,22 @@ public class EM00413 extends BaseApi implements IApi {
 		String remark = paramsStringFilter(param.get("remark"));
 		Long courseGradecomposeId = paramsLongFilter(param.get("courseGradecomposeId"));
 		List<Long> indicationIds = paramsJSONArrayFilter(param.get("indicationIdArray"), Long.class);
+		BigDecimal weight = paramsBigDecimalFilter(param.get("weight"));
+		CcTeacherCourse teacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradecomposeId);
+		//达成度计算类型
+		Integer resultType = teacherCourse.getInt("result_type");
 		//	TODO 2020/07/07 gjm 增加了批次题目成绩
 		Long batchId = paramsLongFilter(param.get("batchId"));
+		if (resultType.equals(CcTeacherCourse.RESULT_TYPE_SCORE2)){
+			//权重不能小于0
+			if(weight==null ||weight.equals(CcCourseGradecomposeIndication.MIN_WEIGHT) || PriceUtils.greaterThan(CcCourseGradecomposeIndication.MIN_WEIGHT, weight)){
+				return renderFAIL("0763", response, header);
+			}
+			//单个权重不能超过1
+			if(PriceUtils.greaterThan(weight, CcCourseGradecomposeIndication.MAX_WEIGHT)){
+				return renderFAIL("0494", response, header);
+			}
+		}
 		if (id == null) {
 			return renderFAIL("0450", response, header);
 		}
@@ -116,6 +130,7 @@ public class EM00413 extends BaseApi implements IApi {
 		ccCourseGradeComposeDetail.set("score", score);
 		ccCourseGradeComposeDetail.set("detail", detail);
 		ccCourseGradeComposeDetail.set("remark", remark);
+		ccCourseGradeComposeDetail.set("weight", weight);
 		ccCourseGradeComposeDetail.set("course_gradecompose_id", courseGradecomposeId);
 
 		// 需要删除的数据

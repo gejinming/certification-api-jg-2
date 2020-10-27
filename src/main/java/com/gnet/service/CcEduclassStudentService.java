@@ -242,11 +242,11 @@ public class CcEduclassStudentService {
 			}
 
 			//验证达成度类型是否正确
-			if(!CcTeacherCourse.TYPE_EVALUATE.equals(type) && !CcTeacherCourse.TYPE_SCORE.equals(type)){
+			if(!CcTeacherCourse.TYPE_EVALUATE.equals(type) && !CcTeacherCourse.TYPE_SCORE.equals(type) && !CcTeacherCourse.TYPE_SCORE2.equals(type)){
 				errorList.add(student);
 				student.set("isError", true);
 				List<String> reasons = student.get("reasons");
-				reasons.add(String.format("excel中的第%s行的达成度计算类型无法识别，达成度计算类型只有%s或%s", i+3, CcTeacherCourse.TYPE_EVALUATE, CcTeacherCourse.TYPE_SCORE));
+				reasons.add(String.format("excel中的第%s行的达成度计算类型无法识别，达成度计算类型只有%s或%s", i+3, CcTeacherCourse.TYPE_EVALUATE, CcTeacherCourse.TYPE_SCORE,CcTeacherCourse.TYPE_SCORE2));
 			}
 
 			String studentNoStr = String.format("%s%s%s%s%s", courseMajor, grade, courseCode, term, studentNo);

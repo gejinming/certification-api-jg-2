@@ -9,13 +9,14 @@ import com.jfinal.plugin.activerecord.Db;
 import com.jfinal.plugin.activerecord.Page;
 import org.apache.commons.lang.StringEscapeUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @type model
  * @description 课程类别表的操作，包括对数据的增删改查与列表
  * @table cc_course_type
- * @author SY
+ * @author gjm
  * @version 1.0
  *
  */
@@ -108,5 +109,12 @@ public class CcCourseType extends DbModel<CcCourseType> {
 
 	}
 
+	public CcCourseType findCourseType(Long planId,String typeValue){
+		ArrayList<Object> params = new ArrayList<>();
+		StringBuilder sql = new StringBuilder("select * from " + CcCourseType.dao.tableName + " where plan_id=? and type_value=? and is_del=0 ");
+		params.add(planId);
+		params.add(typeValue);
+		return findFirst(sql.toString(),params.toArray());
+	}
 
 }

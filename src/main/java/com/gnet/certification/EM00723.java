@@ -8,6 +8,7 @@ import com.gnet.api.ResponseHeader;
 import com.gnet.api.service.BaseApi;
 import com.gnet.api.service.IApi;
 import com.gnet.utils.DetectHtml;
+import com.gnet.utils.FileUtils;
 import com.gnet.utils.SpringContextHolder;
 import com.gnet.utils.WordTemplateKit;
 import com.google.common.collect.Maps;
@@ -102,6 +103,8 @@ public class EM00723  extends BaseApi implements IApi {
         IApi em00802 = SpringContextHolder.getBean("EM00802");
 
         Response em00703Result = em00703.excute(request, response, header, method);
+
+
 
         Character successFlag = header.getSuccflag();
         if (Response.FAIL.equals(successFlag)) {
@@ -244,7 +247,6 @@ public class EM00723  extends BaseApi implements IApi {
         Object name = dataMap.get("name");
         String fileName = name == null ? "word" : name.toString();
         Map<String, Object> resultMap = new HashMap<>();
-
         String docxFileName = exportFileName.replace(WordTemplateKit.FILE_SUFFIX_XML, WordTemplateKit.FILE_SUFFIX_DOCX);
 
         if (StringUtils.isNotBlank(specifiedPath)) {

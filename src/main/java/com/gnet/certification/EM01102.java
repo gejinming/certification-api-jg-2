@@ -37,7 +37,7 @@ public class EM01102 extends BaseApi implements IApi {
 			return renderFAIL("0111", response, header);
 		}
 		// name不能为重复信息的过滤
-		if (CcCourseProperty.dao.isExisted(propertyName, planId)) {
+		if (CcCoursePropertySecondary.dao.isExisted(propertyName,null, planId)) {
 			return renderFAIL("0113", response, header);
 		}
 		// planId不能为空信息的过滤

@@ -88,4 +88,12 @@ public class CcCourseProperty extends DbModel<CcCourseProperty> {
 
 	}
 
+	public CcCourseProperty findCourseProperty(String name,Long planId){
+		List<Object> params = Lists.newArrayList();
+		StringBuilder sql = new StringBuilder("select * from " + CcCourseProperty.dao.tableName + " where property_name=? and plan_id =? and is_del=0 limit 1");
+		params.add(name);
+		params.add(planId);
+		return findFirst(sql.toString(),params.toArray());
+	}
+
 }

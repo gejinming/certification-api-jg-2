@@ -174,4 +174,17 @@ public class CcPlanTerm extends DbModel<CcPlanTerm> {
 		return find(sb.toString(), params.toArray());
 	}
 
+	public CcPlanTerm findPlanId(Long planId,String termName){
+		List<Object> params = Lists.newArrayList();
+		StringBuilder sb = new StringBuilder("select cpt.term_name termName, cpt.year_name yearName, cpt.id planTermId ");
+		sb.append("from " + tableName + "  cpt ");
+		sb.append("where cpt.plan_id =? ");
+		params.add(planId);
+		sb.append("and cpt.term_name=? ");
+		params.add(termName);
+		sb.append("and cpt.is_del = ? limit 1");
+		params.add(Boolean.FALSE);
+		return findFirst(sb.toString(),params.toArray());
+	}
+
 }

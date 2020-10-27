@@ -59,13 +59,13 @@ public class EM00685 extends BaseApi implements IApi {
 		}
 			
 		CcVersion ccVersion = CcVersion.dao.findByGradeAndMajorId(majorId, grade);
-		if(ccVersion == null){
+		/*if(ccVersion == null){
 			return renderFAIL("0842", response, header);
 		}
         String applyGrade = ccVersion.getStr("apply_grade");
         if(StrKit.isBlank(applyGrade)){
         	return renderFAIL("0124", response, header);
-        }
+        }*/
 		
 		// 排序处理
 		try {
@@ -79,7 +79,7 @@ public class EM00685 extends BaseApi implements IApi {
 		Map<String, Object> classesMap = Maps.newHashMap();
 		// 返回内容过滤
 		List<Map<String, Object>> list = new ArrayList<>();
-        Integer minApplyGrade = null;
+        /*Integer minApplyGrade = null;
         Page<CcClass> ccClassPage = null;
         if(applyGrade.endsWith(CcVersion.GRADE_CHARACTER)){
         	//applyGrade（适用年级）数据格式为2016+
@@ -100,9 +100,9 @@ public class EM00685 extends BaseApi implements IApi {
         			gradeArray[j] = temp;
         		    j++;
         		}
-        	}
-        	ccClassPage = CcClass.dao.page(pageable, majorId, gradeArray);
-        }
+        	}*/
+		Page<CcClass> ccClassPage = CcClass.dao.page(pageable, null, null, grade, majorId,1);
+        //}
         
 		List<CcClass> ccClassList = ccClassPage.getList();
 		
@@ -117,7 +117,6 @@ public class EM00685 extends BaseApi implements IApi {
 		for (CcClass temp : ccClassList) {
 			Map<String, Object> office = Maps.newHashMap();
 			office.put("id", temp.get("id"));
-			office.put("code", temp.get("code"));
 			office.put("name", temp.get("name"));
 			office.put("type", temp.get("type"));
 			office.put("grade", temp.getInt("grade"));
@@ -126,6 +125,9 @@ public class EM00685 extends BaseApi implements IApi {
 			office.put("majorName", temp.get("majorName"));
 			office.put("classLeader", temp.get("class_leader"));
 			office.put("remark", temp.get("remark"));
+
+
+
 			
 			list.add(office);
 		}

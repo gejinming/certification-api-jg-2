@@ -87,6 +87,7 @@
        <dic type="courseResultType" name="课程达成度分析法类型">
         	<key value="1" label="考核成绩分析法" />
             <key value="2" label="评分表分析法" />
+           <key value="3" label="财经大学考核成绩分析法" />
         </dic>
         
         <dic type="educationType" name="进修类型">

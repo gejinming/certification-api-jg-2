@@ -49,7 +49,7 @@ public class EM00221 extends BaseApi implements IApi  {
 		Map<String, Object> map = new HashMap<>();
 		if (DictUtils.findLabelByTypeAndKey("term", temp.getInt("term"))==null){
 			 termName = temp.get("start_year") + "~" + temp.get("end_year");
-		}else{;
+		}else{
 			 termName = temp.get("start_year") + "~" + temp.get("end_year") + DictUtils.findLabelByTypeAndKey("term", temp.getInt("term"));
 		}
 

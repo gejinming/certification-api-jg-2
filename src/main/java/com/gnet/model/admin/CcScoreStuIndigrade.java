@@ -211,8 +211,9 @@ public class CcScoreStuIndigrade extends DbModel<CcScoreStuIndigrade> {
 	 * @author SY
 	 */
 	public List<CcScoreStuIndigrade> findAllClassGradeByEduclassIds(List<Long> eduClassIds) {
+		//TODO 2020/9/7 统计时去除按满分统计，因为一个课程的满分可能不一样
 		//List<Long> eduClassIds0 = new ArrayList<>();
-		StringBuilder sql = new StringBuilder("select  sum(cssi.grade) totalGrade, ccgi.max_score maxScore, ccgi.weight, cssi.gradecompose_indication_id gradecomposeIndicationId " +
+		StringBuilder sql = new StringBuilder("select  sum(cssi.grade) totalGrade,ctc.course_id,ccg.gradecompose_id,ccgi.weight, cssi.gradecompose_indication_id gradecomposeIndicationId " +
 				"from " + CcScoreStuIndigrade.dao.tableName + " cssi ");
 		sql.append("inner join " + CcCourseGradecomposeIndication.dao.tableName + " ccgi on ccgi.id = cssi.gradecompose_indication_id and ccgi.is_del = ? ");
 		sql.append("inner join " + CcCourseGradecompose.dao.tableName + " ccg on ccg.id = ccgi.course_gradecompose_id and ccg.is_del = ? ");
@@ -224,7 +225,7 @@ public class CcScoreStuIndigrade extends DbModel<CcScoreStuIndigrade> {
 		sql.append("where cssi.is_del = ? ");
 //		sql.append("group by cssi.gradecompose_indication_id, ccgi.max_score, ccgi.weight ");
 		// BUGFIX cert 217 Edit By SY 2018年1月10日
-		sql.append("group by ctc.course_id,ccgi.indication_id, ccg.gradecompose_id, ccgi.max_score, ccgi.weight ");
+		sql.append("group by ctc.course_id,ccgi.indication_id, ccg.gradecompose_id,ccgi.weight ");
 		sql.append("order by ctc.course_id");
 		return find(sql.toString(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE);
 	}

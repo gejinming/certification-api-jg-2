@@ -1,10 +1,17 @@
 package com.gnet.certification;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.gnet.model.admin.*;
+import com.gnet.utils.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSONObject;
@@ -16,10 +23,6 @@ import com.gnet.api.service.BaseApi;
 import com.gnet.api.service.IApi;
 import com.gnet.service.LoginService;
 import com.gnet.service.PermissionService;
-import com.gnet.utils.AccessTokenKit;
-import com.gnet.utils.CollectionKit;
-import com.gnet.utils.PasswdKit;
-import com.gnet.utils.SpringContextHolder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.jfinal.kit.StrKit;
@@ -94,8 +97,16 @@ public class EM00001 extends BaseApi implements IApi {
 
 		}
 
+        String userRoles=null;
+        if (userRole==1){
+			userRoles="teacher";
+
+        }else {
+            userRoles="student";
+        }
 		// Token生成
-		String token = AccessTokenKit.getToken(user.getLong("id"));
+		//String token = AccessTokenKit.getToken(user.getLong("id"));
+		String token = JwtTokenUtil.createToken(user.getLong("id").toString(),userRoles);
 		// 生成Token失败过滤
 		if (token == null) {
 			return renderFAIL("0005", response, header);
@@ -103,8 +114,19 @@ public class EM00001 extends BaseApi implements IApi {
 		
 		// 设置Cache，缓存用户权限信息
 		saveInfo(user, token);
-		
-		//获取该用户功能权限列表
+
+        Claims claims = Jwts.parser()
+                .setSigningKey("zheJingJinFangSchool")
+                .parseClaimsJws(token).getBody();
+        System.out.println("id:"+claims.get("role"));
+        System.out.println("subject:"+claims.getSubject());
+        SimpleDateFormat sdf=new SimpleDateFormat("yyyy‐MM‐dd hh:mm:ss");
+        System.out.println("签发时间:"+sdf.format(claims.getIssuedAt()));
+        System.out.println("过期时间:"+sdf.format(claims.getExpiration()));
+        System.out.println("当前时间:"+sdf.format(new Date()) );
+
+
+        //获取该用户功能权限列表
 		PermissionService permissionService = SpringContextHolder.getBean(PermissionService.class);
 		List<Permission> permissions = permissionService.findByUserId(user.getLong("id"));
 		List<Map<String, Object>> permissionMap = Lists.newArrayList();

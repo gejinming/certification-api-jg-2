@@ -21,6 +21,9 @@ public class PriceUtils {
 	 * @return
 	 */
 	public static BigDecimal currency(BigDecimal need_format) {
+		if (need_format== null){
+			return null;
+		}
 		return currency(need_format, SCALE);
 	}
 	
@@ -173,6 +176,9 @@ public class PriceUtils {
 	 * @return
 	 */
 	public static boolean greaterThan(BigDecimal number1, BigDecimal number2) {
+		if (number1==null ||number2==null){
+			return false;
+		}
 		return number1.compareTo(number2) == 1;
 	}
 	

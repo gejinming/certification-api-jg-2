@@ -88,5 +88,19 @@ public class CcCourseHierarchy extends DbModel<CcCourseHierarchy> {
 
 	}
 
+	/*
+	 * @param name
+	 * @return com.gnet.model.admin.CcCourseHierarchy
+	 * @author Gejm
+	 * @description: 通过层次名找信息
+	 * @date 2020/10/12 17:22
+	 */
+	public CcCourseHierarchy findHierarchyId(String name,Long planId){
+		List<Object> params = Lists.newArrayList();
+		StringBuilder sql = new StringBuilder("select * from " + CcCourseHierarchy.dao.tableName + " where name=? and is_del=0 and plan_id=? limit 1");
+		params.add(name);
+		params.add(planId);
+		return findFirst(sql.toString(),params.toArray());
+	}
 
 }

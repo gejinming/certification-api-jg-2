@@ -3,7 +3,7 @@ package com.gnet.certification;
 import java.math.BigDecimal;
 import java.util.*;
 
-import com.gnet.model.admin.CcCourseGradecomposeBatch;
+import com.gnet.model.admin.*;
 import com.gnet.service.CcCourseGradecompBatchService;
 import com.gnet.utils.PriceUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +16,6 @@ import com.gnet.api.Response;
 import com.gnet.api.ResponseHeader;
 import com.gnet.api.service.BaseApi;
 import com.gnet.api.service.IApi;
-import com.gnet.model.admin.CcCourseGradeComposeDetail;
-import com.gnet.model.admin.CcCourseGradecompose;
-import com.gnet.model.admin.CcCourseGradecomposeDetailIndication;
 import com.gnet.plugin.id.IdGenerate;
 import com.gnet.response.ServiceResponse;
 import com.gnet.service.CcCourseGradecomposeDetailService;
@@ -54,9 +51,23 @@ public class EM00412 extends BaseApi implements IApi{
 		String remark = paramsStringFilter(param.get("remark"));
 		Long courseGradecomposeId = paramsLongFilter(param.get("courseGradecomposeId"));
 		List<Long> indicationIds = paramsJSONArrayFilter(param.get("indicationIdArray"), Long.class);
+		CcTeacherCourse teacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradecomposeId);
+		//达成度计算类型
+		Integer resultType = teacherCourse.getInt("result_type");
+		//TODO 2020/10/21增加题目权重适用于浙江财经学院的达成度计算
+		BigDecimal weight = paramsBigDecimalFilter(param.get("weight"));
 		//	TODO 2020/07/07 gjm 增加了批次题目成绩
 		Long batchId = paramsLongFilter(param.get("batchId"));
-
+		if (resultType.equals(CcTeacherCourse.RESULT_TYPE_SCORE2)){
+			//权重不能小于0
+			if(weight==null ||weight.equals(CcCourseGradecomposeIndication.MIN_WEIGHT) || PriceUtils.greaterThan(CcCourseGradecomposeIndication.MIN_WEIGHT, weight)){
+				return renderFAIL("0763", response, header);
+			}
+			//单个权重不能超过1
+			if(PriceUtils.greaterThan(weight, CcCourseGradecomposeIndication.MAX_WEIGHT)){
+				return renderFAIL("0494", response, header);
+			}
+		}
 		if (StrKit.isBlank(name)) {
 			return renderFAIL("0452", response, header);
 		}
@@ -93,6 +104,7 @@ public class EM00412 extends BaseApi implements IApi{
 		ccCourseGradeComposeDetail.set("score", score);
 		ccCourseGradeComposeDetail.set("detail", detail);
 		ccCourseGradeComposeDetail.set("remark", remark);
+		ccCourseGradeComposeDetail.set("weight", weight);
 		ccCourseGradeComposeDetail.set("course_gradecompose_id", courseGradecomposeId);
 		//batchId说明是批次的题目
 		if (batchId !=null){

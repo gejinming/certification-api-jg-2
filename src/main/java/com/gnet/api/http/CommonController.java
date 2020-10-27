@@ -1,6 +1,7 @@
 package com.gnet.api.http;
 
 import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -10,7 +11,10 @@ import java.util.UUID;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.gnet.utils.*;
 import com.jfinal.render.RenderException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -29,10 +33,6 @@ import com.gnet.api.sign.SignCreator;
 import com.gnet.plugin.configLoader.ConfigUtils;
 import com.gnet.plugin.route.ControllerBind;
 import com.gnet.service.ApiPermissionService;
-import com.gnet.utils.DateUtil;
-import com.gnet.utils.DateUtils;
-import com.gnet.utils.FreemarkerUtils;
-import com.gnet.utils.SpringContextHolder;
 import com.google.common.collect.Maps;
 import com.jfinal.core.Controller;
 import com.jfinal.kit.StrKit;
@@ -149,7 +149,18 @@ public class CommonController extends Controller {
 				renderJson(response);
 				return;
 			}
-			
+
+			//验证token是否过期
+			Boolean tokenExpired = JwtTokenUtil.isTokenExpired(token);
+			if (tokenExpired){
+				header.setErrorcode("1011");
+				header.setSuccflag(Response.FAIL);
+				response.setHeader(header);
+				renderJson(response);
+				return ;
+			}
+
+			//isTokenExpired(token);
 			if (!UserCacheKit.isLogin(token)) {
 				try {
 					getResponse().sendError(401, "无权访问该API");
@@ -353,3 +364,6 @@ public class CommonController extends Controller {
 	}
 
 }
+
+
+

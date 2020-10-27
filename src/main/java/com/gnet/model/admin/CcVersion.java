@@ -454,4 +454,18 @@ public class CcVersion extends DbModel<CcVersion> {
 		params.add(DEL_NO);
 		return findFirst(sql.toString(), params.toArray());
 	}
+	/*
+	 * @param majorId
+	 * @return com.gnet.model.admin.CcVersion
+	 * @author Gejm
+	 * @description: 获取专业最新的大版本
+	 * @date 2020/9/10 16:11
+	 */
+	public CcVersion getVersionMajor(Long majorId){
+		List<Object> params = new ArrayList<>();
+		StringBuilder sql = new StringBuilder("select * from " + tableName + " where major_id=? and is_del=? and type= 1  order by create_date desc limit 1 ");
+		params.add(majorId);
+		params.add(DEL_NO);
+		return findFirst(sql.toString(), params.toArray());
+	}
 }

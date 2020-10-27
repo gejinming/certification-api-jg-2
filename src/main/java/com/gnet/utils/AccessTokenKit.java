@@ -61,6 +61,7 @@ public class AccessTokenKit {
 	 * @return
 	 */
 	private static String getTimestamp() {
+
 		Long timestamp = System.currentTimeMillis();
 		return timestamp.toString();
 	}

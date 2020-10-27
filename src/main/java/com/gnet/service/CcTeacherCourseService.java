@@ -1,5 +1,6 @@
 package com.gnet.service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -899,6 +900,7 @@ public class CcTeacherCourseService {
 		Long[] ccCourseGradecomposeIndicationIds = new Long[ccCourseGradecomposeIndications.size()];
 		for(int i = 0; i< ccCourseGradecomposeIndications.size(); i++) {
 			CcCourseGradecomposeIndication temp = ccCourseGradecomposeIndications.get(i);
+
 			ccCourseGradecomposeIndicationIds[i] = temp.getLong("id");
 		}
 				
@@ -935,6 +937,7 @@ public class CcTeacherCourseService {
 			temp.set("id", id);
 			temp.set("create_date", date);
 			temp.set("modify_date", date);
+			temp.set("max_score",new BigDecimal("0"));
 			temp.set("course_gradecompose_id", courseGradecomposeIdOldAndNew.get(courseGradecomposeId));
 			
 			CcCourseGradeComposeIndicationIdOldAndNew.put(courseGradecomposeIndicationId, id);

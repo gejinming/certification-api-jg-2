@@ -37,11 +37,19 @@ public class CcTeacherCourse extends DbModel<CcTeacherCourse> {
 	 * 达成度计算类型：评分表分析法
 	 */
 	public static final Integer RESULT_TYPE_EVALUATE = 2;
+	/**
+	 * 达成度计算类型：财经大学考核成绩分析法
+	 */
+	public static final Integer RESULT_TYPE_SCORE2 = 3;
 
 	/**
 	 * 达成度计算类型：考核成绩分析法
 	 */
 	public static final String TYPE_SCORE = "考核成绩分析法";
+	/**
+	 * 达成度计算类型：考核成绩分析法
+	 */
+	public static final String TYPE_SCORE2 = "财经大学考核成绩分析法";
 
 	/**
 	 * 达成度计算类型：评分表成绩分析法
@@ -163,7 +171,7 @@ public class CcTeacherCourse extends DbModel<CcTeacherCourse> {
 	 * @return
 	 */
 	public CcTeacherCourse findCourseByClassId(Long classId) {
-		StringBuilder sql = new StringBuilder("select ctc.*, cc.plan_id version_id from " + tableName + " ctc ");
+		StringBuilder sql = new StringBuilder("select ctc.*, cc.plan_id version_id,ce.educlass_name,cc.name  from " + tableName + " ctc ");
 		sql.append("inner join cc_course cc on cc.id = ctc.course_id ");
 		sql.append("left join cc_educlass ce on ce.teacher_course_id = ctc.id ");
 		sql.append("where ce.id = ? and ctc.is_del = ?");
@@ -586,8 +594,10 @@ public class CcTeacherCourse extends DbModel<CcTeacherCourse> {
 	 * @return
 	 */
 	public CcTeacherCourse findByCourseGradeComposeId(Long courseGradeComposeId) {
-		StringBuilder sql = new StringBuilder("select ctc.*, ccg.input_score_type from " + tableName + " ctc ");
+		StringBuilder sql = new StringBuilder("select ctc.*, ccg.input_score_type,cc.name,ce.educlass_name from " + tableName + " ctc ");
 		sql.append("inner join " + CcCourseGradecompose.dao.tableName + " ccg on ccg.teacher_course_id = ctc.id and ccg.is_del = ? and ccg.id = ? ");
+		sql.append("inner join cc_course cc on cc.id = ctc.course_id ");
+		sql.append("left join cc_educlass ce on ce.teacher_course_id = ctc.id ");
 		sql.append("where ctc.is_del = ? ");
 		return findFirst(sql.toString(), DEL_NO, courseGradeComposeId, DEL_NO);
 	}

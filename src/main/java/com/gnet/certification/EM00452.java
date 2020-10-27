@@ -39,7 +39,9 @@ public class EM00452 extends BaseApi implements IApi{
 		String content = paramsStringFilter(param.get("content"));
 		String site = paramsStringFilter(param.get("site"));
 		String remark = paramsStringFilter(param.get("remark"));
-		
+		String projectName = paramsStringFilter(param.get("projectName"));
+
+
 		if (teacherId == null) {
 			return renderFAIL("0622", response, header);
 		}
@@ -66,6 +68,7 @@ public class EM00452 extends BaseApi implements IApi{
 		ccTeacherFurtherEducation.set("content", content);
 		ccTeacherFurtherEducation.set("site", site);
 		ccTeacherFurtherEducation.set("is_del", Boolean.FALSE);
+		ccTeacherFurtherEducation.set("project_name", projectName);
 		ccTeacherFurtherEducation.set("remark", remark);
 
 		Map<String, Object> result = new HashMap<>();

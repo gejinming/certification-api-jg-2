@@ -92,7 +92,7 @@ public class EM00800 extends BaseApi implements IApi {
         Map<Integer, Integer> sortIndexMap = new HashMap<>();
         for(int i=1; i<=courseTargets.size(); i++){
 			Map<String, Object> map = courseTargets.get(i-1);
-			String content = ConvertUtils.convert(map.get("content"), String.class);
+			String content = ConvertUtils.convert(map.get("content"), String.class).trim();
 			Integer sort = ConvertUtils.convert(map.get("sort"), Integer.class);
             Boolean isRelate = ConvertUtils.convert(map.get("isRelate"), Boolean.class);
 

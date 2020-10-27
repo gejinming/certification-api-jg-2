@@ -152,7 +152,7 @@ public class EM00656 extends BaseApi implements IApi {
         for (CcPlanCourseZone ccPlanCourseZone : ccPlanCourseZones) {
             Long zoneId = ccPlanCourseZone.getLong("id");
             Map<String, Object> zoneInfo = null;
-            if (allZoneMap.get(zoneId) == null) {
+            if (allZoneMap.get(zoneId) == null ) {
                 zoneInfo = Maps.newHashMap();
                 zoneInfo.put("id", ccPlanCourseZone.getLong("id"));
                 zoneInfo.put("zoneType", ccPlanCourseZone.getInt("zone_type"));
@@ -169,7 +169,8 @@ public class EM00656 extends BaseApi implements IApi {
                     zoneInfo.put("name", ccPlanCourseZone.getStr("property_name"));
                 } else if (CcPlanCourseZone.TYPE_PROPERTY_SECONDARY.equals(ccPlanCourseZone.getInt("zone_type"))) {
                     zoneInfo.put("name", ccPlanCourseZone.getStr("property_secondary_name"));
-                } else if (CcPlanCourseZone.TYPE_DIRECTION.equals(ccPlanCourseZone.getInt("zone_type"))) {
+                }
+                else if (CcPlanCourseZone.TYPE_DIRECTION.equals(ccPlanCourseZone.getInt("zone_type"))) {
                     zoneInfo.put("name", ccPlanCourseZone.getStr("direction_name"));
                 } else if (CcPlanCourseZone.TYPE_MODULE.equals(ccPlanCourseZone.getInt("zone_type"))) {
                     zoneInfo.put("name", ccPlanCourseZone.getStr("module_name"));
@@ -353,6 +354,7 @@ public class EM00656 extends BaseApi implements IApi {
                 courseInfo.put("isGroup", Boolean.FALSE);
                 courseInfo.put("examTerm", new ArrayList<Map<String, Object>>());
                 courseInfo.put("haveClassTerm", new HashMap<String, BigDecimal>());
+
 
                 //区别课程组和普通课程、多选一课程
                 Long state = ccCourse.getLong("state");

@@ -665,7 +665,7 @@ public class CcVersionService {
 			return false;
 		}
 
-		//A11. 课程目标
+		//A11. 拷贝指标点与课程关系
 		message = messageNext;
 		type = CcVersionCreateLog.STEP_INDICATION;
 		try {
@@ -809,6 +809,45 @@ public class CcVersionService {
 				return false;
 			}
 			// 日志更新
+			// 日志更新
+			messageNext = "拷贝课程分组信息";
+			ccVersionCreateLogService.changeStepJob(versionCreateLogId, "成功" + message + ",正在" + messageNext, type);
+			//ccVersionCreateLogService.changeStepJob(versionCreateLogId, "成功" + message, type);
+		} catch (Exception e) {
+			ccVersionCreateLogService.changeStepJobForError(versionCreateLogId, message, type);
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+			return false;
+		}
+		//A19.课程分组信息两张表cc_course_group_mange cc_course_group_mange_group
+		message = messageNext;
+		type = CcVersionCreateLog.STEP_COURSE_GROUPS;
+		try {
+			result = copyCourseGroupCourse(allMessage);
+			if(!result) {
+				ccVersionCreateLogService.changeStepJobForError(versionCreateLogId, message, type);
+				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+				return false;
+			}
+			// 日志更新
+			messageNext = "拷贝课程分级教学信息";
+			ccVersionCreateLogService.changeStepJob(versionCreateLogId, "成功" + message + ",正在" + messageNext, type);
+			//ccVersionCreateLogService.changeStepJob(versionCreateLogId, "成功" + message, type);
+		} catch (Exception e) {
+			ccVersionCreateLogService.changeStepJobForError(versionCreateLogId, message, type);
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+			return false;
+		}
+		//A20.课程分级教学信息两张表cc_course_group_teach cc_course_group_teach_mange
+		message = messageNext;
+		type = CcVersionCreateLog.STEP_COURSE_TEACH_GROUPS;
+		try {
+			result = copyCourseTeachGroup(allMessage);
+			if(!result) {
+				ccVersionCreateLogService.changeStepJobForError(versionCreateLogId, message, type);
+				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+				return false;
+			}
+			// 日志更新
 			ccVersionCreateLogService.changeStepJob(versionCreateLogId, "成功" + message, type);
 		} catch (Exception e) {
 			ccVersionCreateLogService.changeStepJobForError(versionCreateLogId, message, type);
@@ -816,9 +855,96 @@ public class CcVersionService {
 			return false;
 		}
 
+
 		return true;
 	}
+	/**
+	 * 拷贝课程分组
+	 * @param allMessage
+	 * @return
+	 */
+	private Boolean copyCourseGroupCourse(Record allMessage){
+		Date date = allMessage.getDate("date");
+		Long newVersionId = allMessage.getLong("newVersionId");
+		Long oldVersionId = allMessage.getLong("oldVersionId");
+		Map<Long, Long> oldAndNewCourseIds = allMessage.get("oldAndNewCourseIds");
+		IdGenerate idGenetate = SpringContextHolder.getBean(IdGenerate.class);
+		//上个版本的课程分组信息
+		List<CcCourseGroupMange> courseGroupManges = CcCourseGroupMange.dao.findFilteredByColumnIn("plan_id", oldVersionId);
+		Map<Long, Long> oldAndNewGroupCourseIds = new HashMap<>();
+		List<Long> groupId=new ArrayList<>();
+		for (CcCourseGroupMange temp: courseGroupManges){
+			Long id = idGenetate.getNextValue();
+			groupId.add(temp.get("id"));
+			oldAndNewGroupCourseIds.put(temp.get("id"),id);
+			temp.set("id", id);
+			temp.set("modify_date", date);
+			temp.set("create_date", date);
+			temp.set("plan_id",newVersionId);
+		}
+		//课程分组与课程的关联表
+		if (groupId.size()!=0 && !groupId.isEmpty()){
+			List<CcCourseGroupMangeGroup> groupMangeCourse = CcCourseGroupMangeGroup.dao.findGroupMangeCourse(groupId);
+			for (CcCourseGroupMangeGroup temps: groupMangeCourse){
+				temps.set("mange_group_id",oldAndNewGroupCourseIds.get(temps.getLong("mange_group_id")));
+				temps.set("course_id",oldAndNewCourseIds.get(temps.getLong("course_id")));
+			}
+			if(!CcCourseGroupMangeGroup.dao.batchSave(groupMangeCourse)) {
+				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+				return false;
+			}
+		}
+		//保存
+		if(!courseGroupManges.isEmpty() &&!CcCourseGroupMange.dao.batchSave(courseGroupManges)) {
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+			return false;
+		}
 
+		allMessage.set("oldAndNewGroupCourseIds", oldAndNewGroupCourseIds);
+
+		return  true;
+	}
+	/**
+	 * 拷贝课程分级教学信息
+	 * @param allMessage
+	 * @return
+	 */
+	private Boolean copyCourseTeachGroup(Record allMessage){
+		Date date = allMessage.getDate("date");
+		Long newVersionId = allMessage.getLong("newVersionId");
+		Long oldVersionId = allMessage.getLong("oldVersionId");
+		Map<Long, Long> oldAndNewGroupCourseIds = allMessage.get("oldAndNewGroupCourseIds");
+		List<CcCourseGroupMangeTeach> teachGroup = CcCourseGroupMangeTeach.dao.findFilteredByColumnIn("plan_id", oldVersionId);
+		List<Long> groupId=new ArrayList<>();
+		Map<Long, Long> oldAndNewTeachGroup = new HashMap<>();
+		IdGenerate idGenetate = SpringContextHolder.getBean(IdGenerate.class);
+		for (CcCourseGroupMangeTeach temp : teachGroup){
+			groupId.add(temp.get("id"));
+			Long id = idGenetate.getNextValue();
+			oldAndNewTeachGroup.put(temp.get("id"),id);
+			temp.set("id",id);
+			temp.set("plan_id",newVersionId);
+			temp.set("modify_date", date);
+			temp.set("create_date", date);
+		}
+		if (groupId.size()!=0 && !groupId.isEmpty()){
+			List<CcCourseGroupTeachMange> groupMangeCourse = CcCourseGroupTeachMange.dao.finTeachGroups(groupId);
+			for (CcCourseGroupTeachMange temps: groupMangeCourse){
+				temps.set("teach_group_id",oldAndNewTeachGroup.get(temps.getLong("teach_group_id")));
+				temps.set("group_id",oldAndNewGroupCourseIds.get(temps.getLong("group_id")));
+			}
+			if(!CcCourseGroupTeachMange.dao.batchSave(groupMangeCourse)) {
+				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+				return false;
+			}
+		}
+
+		if(!teachGroup.isEmpty()&&!CcCourseGroupMangeTeach.dao.batchSave(teachGroup)) {
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+			return false;
+		}
+		return true;
+	}
 	/**
 	 * 拷贝培养计划课程分区各培养计划学期详情表
 	 * @param allMessage
@@ -1066,7 +1192,10 @@ public class CcVersionService {
 					temp.set("create_date", date);
 					temp.set("status", status);
 					temp.set("audit_comment", null);
-					temp.set("course_id", oldAndNewCourseIds.get(temp.getLong("course_id")));
+					//TODO 2020/09/27 数据库里可能有脏数据，这里可能为空
+					if (oldAndNewCourseIds.get(temp.getLong("course_id")) != null){
+						temp.set("course_id", oldAndNewCourseIds.get(temp.getLong("course_id")));
+					}
 				}
 				if(!CcCourseOutline.dao.batchSave(ccCourseOutlines)) {
 					TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
@@ -1478,12 +1607,18 @@ public class CcVersionService {
 					oldPlanTermCourseIds[i] = temp.getLong("id");
 					Long id = idGenetate.getNextValue();
 					oldAndNewPlanTermCourseIds.put(temp.getLong("id"), id);
-
+					if( oldAndNewPlanTermIds.get(temp.getLong("plan_term_id")) == null ||oldAndNewPlanTermIds.get(temp.getLong("plan_term_id"))==null ){
+						logger.info(i+"错误！");
+					}
 					temp.set("id", id);
 					temp.set("modify_date", date);
 					temp.set("create_date", date);
 					temp.set("plan_term_id", oldAndNewPlanTermIds.get(temp.getLong("plan_term_id")));
-					temp.set("course_id", oldAndNewCourseIds.get(temp.getLong("course_id")));
+					//TODO 2020/09/27 数据库里可能有脏数据，这里可能为空
+					if (oldAndNewCourseIds.get(temp.getLong("course_id")) != null){
+						temp.set("course_id", oldAndNewCourseIds.get(temp.getLong("course_id")));
+					}
+
 				}
 				if(!CcPlanTermCourse.dao.batchSave(ccPlanTermCourses)) {
 					TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
@@ -1554,14 +1689,30 @@ public class CcVersionService {
 				for(int i = 0; i < ccIndicationCourses.size(); i++) {
 					CcIndicationCourse temp = ccIndicationCourses.get(i);
 					oldIndicationCourseIds[i] = temp.getLong("id");
+
+					if (oldAndNewIndicationIds.get(temp.getLong("indication_id"))==null){
+						logger.error("老的指标点关联新的指标点错误为空");
+
+					}
+
+
+					if(oldAndNewCourseIds.get(temp.getLong("course_id")) ==null){
+						logger.error("老的课程关联新的课程错误为空");
+
+					}
+
 					Long id = idGenetate.getNextValue();
 					oldAndNewIndicationCourseIds.put(temp.getLong("id"), id);
 
 					temp.set("id", id);
 					temp.set("modify_date", date);
 					temp.set("create_date", date);
+
 					temp.set("indication_id", oldAndNewIndicationIds.get(temp.getLong("indication_id")));
-					temp.set("course_id", oldAndNewCourseIds.get(temp.getLong("course_id")));
+					//TODO 2020/09/27 数据库里可能有脏数据，这里可能为空
+					if (oldAndNewCourseIds.get(temp.getLong("course_id")) != null){
+						temp.set("course_id", oldAndNewCourseIds.get(temp.getLong("course_id")));
+					}
 				}
 				if(!CcIndicationCourse.dao.batchSave(ccIndicationCourses)) {
 					TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
@@ -1620,13 +1771,13 @@ public class CcVersionService {
 					if(temp.getLong("property_id") != null){
 						temp.set("property_id", oldAndNewCoursePropertyIds.get(temp.getLong("property_id")));
 					}
-					if(temp.getLong("property_id") != null){
+					if(temp.getLong("property_secondary_id") != null){
 						temp.set("property_secondary_id", oldAndNewCoursePropertySecondaryIds.get(temp.getLong("property_secondary_id")));
 					}
 					if(temp.getLong("hierarchy_id") != null){
 						temp.set("hierarchy_id", oldAndNewCourseHierarchyIds.get(temp.getLong("hierarchy_id")));
 					}
-					if(temp.getLong("hierarchy_id") != null){
+					if(temp.getLong("hierarchy_secondary_id") != null){
 						temp.set("hierarchy_secondary_id", oldAndNewCourseHierarchySecondaryIds.get(temp.getLong("hierarchy_secondary_id")));
 					}
 				}
@@ -1665,7 +1816,10 @@ public class CcVersionService {
 					ccIndication.set("id", newId);
 					ccIndication.set("create_date", date);
 					ccIndication.set("modify_date", date);
-					ccIndication.set("course_id", oldAndNewCourseIds.get(ccIndication.getLong("course_id")));
+					//TODO 2020/09/27 数据库里可能有脏数据，这里可能为空
+					if (oldAndNewCourseIds.get(ccIndication.getLong("course_id")) != null){
+						ccIndication.set("course_id", oldAndNewCourseIds.get(ccIndication.getLong("course_id")));
+					}
 				}
 				if(!CcIndication.dao.batchSave(ccIndications)) {
 					TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
@@ -2646,11 +2800,14 @@ public class CcVersionService {
 					oldTeacherCourseIds[i] = temp.getLong("id");
 					Long id = idGenetate.getNextValue();
 					oldAndNewTeacherCourseIds.put(temp.getLong("id"), id);
-
 					temp.set("id", id);
 					temp.set("modify_date", date);
 					temp.set("create_date", date);
-					temp.set("course_id", oldAndNewCourseIds.get(temp.getLong("course_id")));
+					//TODO 2020/09/27 数据库里可能有脏数据，这里可能为空
+					if (oldAndNewCourseIds.get(temp.getLong("course_id")) != null){
+						temp.set("course_id", oldAndNewCourseIds.get(temp.getLong("course_id")));
+					}
+
 				}
 				if(!CcTeacherCourse.dao.batchSave(ccTeacherCourses)) {
 					TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();

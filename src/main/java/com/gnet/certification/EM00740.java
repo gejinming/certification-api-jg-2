@@ -58,6 +58,7 @@ public class EM00740 extends BaseApi implements IApi {
 		Map<String, Object> result = Maps.newHashMap();
 		
 		Long eduClassId = paramsLongFilter(param.get("eduClassId"));
+		Long batchId = paramsLongFilter(param.get("batchId"));
 		// 开课课程成绩组成元素编号
 		Long courseGradeComposeId = paramsLongFilter(param.get("courseGradeComposeId"));
 		// 教学班编号为空过滤
@@ -75,7 +76,7 @@ public class EM00740 extends BaseApi implements IApi {
 		}
 		
 		try {
-			Map<String, Object> returnMap = ccStudentService.getScoreMap(ccTeacherCourse, courseGradeComposeId);
+			Map<String, Object> returnMap = ccStudentService.getScoreMap(ccTeacherCourse, courseGradeComposeId,batchId);
 			Map<String, Object> header2 = (Map<String, Object>) returnMap.get("head");
 			Map<String, Object> headerIdMap = (Map<String, Object>) returnMap.get("headId");
 

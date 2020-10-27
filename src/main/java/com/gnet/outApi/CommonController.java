@@ -1,6 +1,7 @@
 package com.gnet.outApi;
 
 import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.jfinal.render.RenderException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -134,7 +137,9 @@ public class CommonController extends Controller {
 		}
 		header.setTrcode(r.getHeader().getTrcode());
 		header.setAppseq(r.getHeader().getAppseq());
-		
+
+
+
 //		// Token校验
 //		String noToken[] = new String[]{"EM00001", "EM00137"};
 //		String token = null;

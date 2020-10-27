@@ -1,6 +1,7 @@
 package com.gnet.service;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ import java.util.logging.SimpleFormatter;
 
 import com.gnet.model.admin.*;
 import com.gnet.utils.DateUtil;
+import org.apache.bcel.generic.IF_ACMPEQ;
 import org.apache.commons.lang.text.StrBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +35,7 @@ import com.jfinal.plugin.activerecord.Record;
  * @author wct
  * @date 2016年7月21日
  */
-@Transactional(readOnly = true)
+
 @Component("ccResultStatisticsService")
 public class CcResultStatisticsService {
 
@@ -693,9 +695,9 @@ public class CcResultStatisticsService {
 	 * 注意：这里如果一个教师课程，有两个教学班，计算课程达成度报表数据的时候，直接把每个学生加起来，除以总学生数。而不是两个教学班的报表加一下除以二。
 	 * @param grade
 	 * @param versionId
-	 * @return
+	 * @return 这个与statisticsCourseResultForJGExcept 区别 是包含统计所有的学生（剔除和不剔除）
 	 */
-	@Transactional(readOnly = false)
+
 	public boolean statisticsCourseResultForJG(Integer grade, Long versionId) {
 		/*
 		 * 1.  获取当前年级和版本下的所有课程
@@ -720,7 +722,6 @@ public class CcResultStatisticsService {
 		Map<Long, List<Long>> courseEduclassIdMap = new HashMap<>();
 		// 一个教学班属于哪个课程  教学班与课程id绑定
 		Map<Long, Long> educlassCourseIdMap = new HashMap<>();
-		//根据课程id获取教学班列表  那这里就有问题了，
 		// 因为课程列表里课程id可能有不同年级在用，那么这个教学班列表包含了其他年级的  这里需要加个年级条件
 		List<CcEduclass> ccEduclasseList = CcEduclass.dao.findAllByCourseIds(courseIdList,grade);
 		List<Long> ccEduclassIdList = new ArrayList<>();
@@ -748,8 +749,8 @@ public class CcResultStatisticsService {
 
 
 
-		// 3. 找到个个教学班下，有多少个学生 。    这一部分是没问题 统计该课程下总共有多少学生
-
+		// 3. 找到个个教学班下，有多少个学生 。
+		//这个与statisticsCourseResultForJGExcept区别的地方就是这个 这个是统计教学班的人数
 		List<CcEduclassStudent> ccEduclassStudentList = CcEduclassStudent.dao.countStudentNum(ccEduclassIdList);
 		Map<Long, Long> educlassStudentMap = new HashMap<>();
 		Map<Long, Long> courseStudentMap = new HashMap<>();
@@ -769,6 +770,8 @@ public class CcResultStatisticsService {
 		Map<Long, BigDecimal> gradecomposeIndicationIdTotalScore = new HashMap<>();
 		Map<Long, BigDecimal> gradecomposeIndicationIdMaxScore = new HashMap<>();
 		Map<Long, BigDecimal> gradecomposeIndicationIdWeight = new HashMap<>();
+		Map<Long, Long> gradecomposeIndicationIdcourseId = new HashMap<>();
+		Map<Long, Long> gradecomposeIdMap = new HashMap<>();
 
 		//TODO 一个课程一个老师下面有多个教学班这里会出现问题，取其中一个教学班id就可以统计所有的了，所以去除多余的
 		//找出老师下面多个教学班其中的
@@ -784,6 +787,7 @@ public class CcResultStatisticsService {
 		}
 
 		// 3. 找到个个教学班下，总分有多少，（平均分有误，因为学生没有分数的，他无法计算）
+		//TODO 批次成绩加上之后会出现不同的课程的满分不相同，所以这个统计需要改动
 		List<CcScoreStuIndigrade> ccScoreStuIndigrades = CcScoreStuIndigrade.dao.findAllClassGradeByEduclassIds(ccEduclassIdList1);
 		//List<CcScoreStuIndigrade> ccScoreStuIndigrades = CcScoreStuIndigrade.dao.findCourseGradecomposeIdsGrade(ccEduclassIdList,null,null);
 
@@ -794,10 +798,12 @@ public class CcResultStatisticsService {
 			//成绩总分
 			BigDecimal totalGrade = tempCcScoreStuIndigrade.getBigDecimal("totalGrade");
 			//满分
-			BigDecimal maxScore = tempCcScoreStuIndigrade.getBigDecimal("maxScore");
+			//BigDecimal maxScore = tempCcScoreStuIndigrade.getBigDecimal("maxScore");
 			gradecomposeIndicationIdTotalScore.put(gradecomposeIndicationId, totalGrade);
-			gradecomposeIndicationIdMaxScore.put(gradecomposeIndicationId, maxScore);
+			//gradecomposeIndicationIdMaxScore.put(gradecomposeIndicationId, maxScore);
 			gradecomposeIndicationIdWeight.put(gradecomposeIndicationId, weight);
+			gradecomposeIndicationIdcourseId.put(gradecomposeIndicationId,tempCcScoreStuIndigrade.getLong("course_id"));
+			gradecomposeIdMap.put(gradecomposeIndicationId,tempCcScoreStuIndigrade.getLong("gradecompose_id"));
 		}
 		// 课程下包含了那些 gradecomposeIndicationId。 通过课程目标关联过去
 		List<CcIndication> ccIndicationList = CcIndication.dao.findEachIndicationCourseAndGradecomposeIndicationByCourseIds(courseIdList);
@@ -844,14 +850,17 @@ public class CcResultStatisticsService {
 		List<Long> indicationCourseIds = new ArrayList<>();
 		// 准备指标点达成度数据，需要考虑专业方向
 		Map<String, BigDecimal> majorReportResultMap = Maps.newLinkedHashMap();
+		//多选一
 		Map<String, Map<Long, BigDecimal>> courseGroupResultMap = Maps.newHashMap();
 		// 准备一份map，用于数据获取
-		List<CcIndicationCourse> ccIndicationCourses = CcIndicationCourse.dao.findByVersionId(versionId);
+		List<CcIndicationCourse> ccIndicationCourses = CcIndicationCourse.dao.findByVersionId(versionId,1);
 		Map<Long, CcIndicationCourse> indicationCourseMap = new HashMap<>();
 		for(CcIndicationCourse temp : ccIndicationCourses) {
 			Long indicationCourseId = temp.getLong("id");
 			indicationCourseMap.put(indicationCourseId, temp);
 		}
+
+
 		Date date = new Date();
 		// 遍历整个课程，设置数据
 		for(Long courseId : courseIdList) {
@@ -885,6 +894,7 @@ public class CcResultStatisticsService {
 					 *  (平均分1*权重1+平均分2*权重2+平均分3*权重3……)相当于mom
 					 *  总分1*权重1+总分2*权重2+总分3*权重3……)相当于son
 					 */
+
 					BigDecimal resultTemp = new BigDecimal(0);
 					BigDecimal mom = new BigDecimal(0);
 					BigDecimal son = new BigDecimal(0);
@@ -899,14 +909,46 @@ public class CcResultStatisticsService {
 						if(totalGrade == null) {
 							continue;
 						}
+
+
 						//权重
 						BigDecimal weight = gradecomposeIndicationIdWeight.get(gradecomposeIndicatoinId);
 						//平均分
 						BigDecimal avgGrade = totalGrade.divide(studentNum, 5, RoundingMode.HALF_UP);
 						//平均分*权重
 						mom = mom.add(avgGrade.multiply(weight));
-						//满分*权重
-						son = son.add(maxScore.multiply(weight));
+
+						//TODO 2020/09/07 一个课程多个教学班满分计算方式改为(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)/总学生数，
+						// 权重应该是相同的，不然这个还要改
+
+						Long courseIds = gradecomposeIndicationIdcourseId.get(gradecomposeIndicatoinId);
+						//成绩组成id
+						Long gradecomposeId = gradecomposeIdMap.get(gradecomposeIndicatoinId);
+						//(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)
+						BigDecimal maxScores = new BigDecimal("0");
+						//统计每个教学班的学生个数
+						List<CcEduclassStudent> ccEduclassStudents = CcEduclassStudent.dao.countStudentNums(courseIds);
+						for (CcEduclassStudent educlassStudent : ccEduclassStudents){
+							Long edClassId = educlassStudent.getLong("id");
+
+							Object studentNums = educlassStudent.get("studentNum");
+							if (studentNums==null || studentNums.equals("")){
+								continue;
+							}
+							int classStudentNum = Integer.parseInt(educlassStudent.get("studentNum")+"");
+							BigDecimal studentNumBig = new BigDecimal(classStudentNum);
+
+							CcCourseGradecomposeIndication maxscoreAndWeight = CcCourseGradecomposeIndication.dao.findGradecomposeMaxscoreAndWeight(edClassId, indicationId, gradecomposeId);
+							if (maxscoreAndWeight==null){
+								continue;
+							}
+							//(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)
+							BigDecimal indicationMaxScore = maxscoreAndWeight.getBigDecimal("max_score");
+							maxScores=maxScores.add(indicationMaxScore.multiply(studentNumBig));
+
+						}
+						//(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)/总人数*权重
+						son = son.add(maxScores.divide(studentNum,2).multiply(weight));
 					}
 					CcIndication ccIndication = ccIndicationMap.get(indicationId);
 					if(ccIndication == null) {
@@ -937,8 +979,13 @@ public class CcResultStatisticsService {
 				CcReportCourse ccReportCourse = new CcReportCourse();
 				ccReportCourse.set("grade", grade);
 				ccReportCourse.set("indication_course_id", indicationCourseId);
+
 				if(oldCcReportCourse != null) {
-					ccReportCourse.set("result", PriceUtils.currency(oldCcReportCourse.getBigDecimal("result")));
+					BigDecimal result1 = oldCcReportCourse.getBigDecimal("result");
+					if (result1 != null){
+						ccReportCourse.set("result", PriceUtils.currency(oldCcReportCourse.getBigDecimal("result")));
+					}
+
 				}
 				ccReportCourse.set("except_result", PriceUtils.currency(result));
 				ccReportCourse.set("is_del", CcReportCourse.DEL_NO);
@@ -954,7 +1001,11 @@ public class CcResultStatisticsService {
 				// 记录专业及其每个方向上的指标点达成度
 				Long majorDirectionId = ccIndicationCourse.getLong("direction_id");
 				Long courseGroupId = ccIndicationCourse.getLong("course_group_id");
-
+				//教学分组编号
+				Long teachGroupId = ccIndicationCourse.getLong("teach_group_id");
+				if (courseGroupId != null || teachGroupId !=null ) {
+					System.out.println("ssss");
+				}
 				// 无专业方向，赋予专业方向编号无专业方向编号
 				if (majorDirectionId == null) {
 					majorDirectionId = CcReportMajor.NO_MAJORDIRECTION_ID;
@@ -968,28 +1019,33 @@ public class CcResultStatisticsService {
 					majorReportResultMap.put(indicationMajorResultKey, new BigDecimal(0));
 				}
 
-				// 课程组编号
-				if (courseGroupId == null) {
-					majorReportResultMap.put(indicationMajorResultKey
-							, PriceUtils._add(PriceUtils.currency(majorReportResultMap.get(indicationMajorResultKey))
-									, PriceUtils.currency(result)));
+				// 多选一编号 分级教学编号   这里先不加分级教学的数据,
+				if (teachGroupId == null){
 
-				} else {
-					Map<Long, BigDecimal> courseGroupResult = null;
-					if (courseGroupResultMap.get(indicationMajorResultKey) == null) {
-						courseGroupResult = Maps.newHashMap();
-						courseGroupResultMap.put(indicationMajorResultKey, courseGroupResult);
+
+					if (courseGroupId == null ) {
+						majorReportResultMap.put(indicationMajorResultKey
+								, PriceUtils._add(PriceUtils.currency(majorReportResultMap.get(indicationMajorResultKey))
+										, PriceUtils.currency(result)));
+
 					} else {
-						courseGroupResult = courseGroupResultMap.get(indicationMajorResultKey);
+
+						Map<Long, BigDecimal> courseGroupResult = null;
+						if (courseGroupResultMap.get(indicationMajorResultKey) == null) {
+							courseGroupResult = Maps.newHashMap();
+							courseGroupResultMap.put(indicationMajorResultKey, courseGroupResult);
+						} else {
+							courseGroupResult = courseGroupResultMap.get(indicationMajorResultKey);
+						}
+						BigDecimal minScore = courseGroupResult.get(courseGroupId);
+						// 当课程组中该门课成绩更小或是之前课程组未有成绩时，课程组成绩为该门课成绩
+						if (minScore == null || PriceUtils.greaterThan(minScore, result)) {
+							minScore = result;
+						}
+						courseGroupResult.put(courseGroupId, minScore);
+
 					}
 
-					BigDecimal minScore = courseGroupResult.get(courseGroupId);
-					// 当课程组中该门课成绩更小或是之前课程组未有成绩时，课程组成绩为该门课成绩
-					if (minScore == null || PriceUtils.greaterThan(minScore, result)) {
-						minScore = result;
-					}
-
-					courseGroupResult.put(courseGroupId, minScore);
 				}
 			}
 		}
@@ -1032,10 +1088,34 @@ public class CcResultStatisticsService {
 			String[] keySplit = entry.getKey().split(",");
 			// 指标点编号
 			Long indicationId = Long.valueOf(keySplit[0]);
-			Long a=704175L;
-			if (indicationId==a){
-				System.out.println("ss");
-			}
+			/*//TODO 2020/09/09准备一个只有分级教学的数据,用于课程分组中最小的那个值，合并到总的指标点分数
+			List<CcIndicationCourse> byFenjiCourseVersionId = CcIndicationCourse.dao.findByFenjiCourseVersionId(versionId,indicationId,1,null);
+			for (CcIndicationCourse temp : byFenjiCourseVersionId){
+				//分级教学id
+				Long teachGroupId = temp.getLong("teach_group_id");
+				Long oldGroupId=0l;
+				List<CcIndicationCourse> groupCourse = CcIndicationCourse.dao.findByFenjiCourseVersionId(versionId, indicationId, 2, teachGroupId);
+				for (int i=0; i<groupCourse.size();i++){
+
+					CcIndicationCourse ccIndicationCourse = groupCourse.get(i);
+					Long groupId = ccIndicationCourse.getLong("group_id");
+					Long indicationCourseId = ccIndicationCourse.getLong("id");
+					if (i==0){
+						oldGroupId=groupId;
+					}
+					BigDecimal groupResult = new BigDecimal("0");
+					if (oldGroupId.equals(groupId)){
+						for (CcReportCourse ccReportCourse :saveCcReportCourseList){
+							Long indicationCourseId1 = ccReportCourse.getLong("indication_course_id");
+							if (indicationCourseId.equals(indicationCourseId1)){
+								groupResult=groupResult.add(ccReportCourse.getBigDecimal("except_result"));
+							}
+						}
+					}
+
+				}
+
+			}*/
 			// 专业方向编号
 			Long majorDirectionId = Long.valueOf(keySplit[1]);
 			majorDirectionId = CcReportMajor.NO_MAJORDIRECTION_ID.equals(majorDirectionId) ? null : majorDirectionId;
@@ -1089,25 +1169,45 @@ public class CcResultStatisticsService {
 			ccReportMajor.set("indication_id", indicationId);
 			ccReportMajor.set("grade", grade);
 			ccReportMajor.set("major_direction_id", majorDirectionId);
-            BigDecimal maxResult = new BigDecimal(1);
+			BigDecimal maxResult = new BigDecimal(1);
 
-            if(oldCcReportMajor != null) {
-                //如果值超过1就设置为1
-			    if(PriceUtils.greaterThan(PriceUtils.currency(oldCcReportMajor.getBigDecimal("except_result")),maxResult))
-                {
-                    ccReportMajor.set("except_result", PriceUtils.currency(maxResult));
-                }else{
-                    ccReportMajor.set("except_result", PriceUtils.currency(oldCcReportMajor.getBigDecimal("except_result")));
-                }
+			//TODO 因为分级教学 只要课程分组中合计最小的值加入达成度中
+			BigDecimal minTeacherResult = new BigDecimal("0");
+			List<CcIndicationCourse> teachIndicationCourses = CcIndicationCourse.dao.sumTeachGroupResult(versionId, indicationId, null);
+
+			for (CcIndicationCourse temp: teachIndicationCourses){
+				BigDecimal teachMaxResult = temp.getBigDecimal("teachMaxResult");
+				if (teachMaxResult !=null){
+					minTeacherResult=minTeacherResult.add(teachMaxResult);
+				}
+
+				System.out.println(teachMaxResult);
+
+			}
+			if(oldCcReportMajor != null && oldCcReportMajor.getBigDecimal("except_result") !=null) {
+				BigDecimal exceptResult = oldCcReportMajor.getBigDecimal("except_result");
+				System.out.println(exceptResult);
+				//数据加上分级教学中分组最小值
+				BigDecimal subResult = oldCcReportMajor.getBigDecimal("except_result").add(minTeacherResult);
+
+				//如果值超过1就设置为1
+				if(PriceUtils.greaterThan(PriceUtils.currency(subResult),maxResult))
+				{
+					ccReportMajor.set("except_result", PriceUtils.currency(maxResult));
+				}else{
+					ccReportMajor.set("except_result", PriceUtils.currency(subResult));
+				}
 
 
 			}
-            //如果值超过1就设置为1
-            if (PriceUtils.greaterThan(indicationScore,maxResult)){
-                ccReportMajor.set("result", maxResult);
-            }else {
-                ccReportMajor.set("result", indicationScore);
-            }
+
+			//如果值超过1就设置为1
+			indicationScore=indicationScore.add(minTeacherResult);
+			if (PriceUtils.greaterThan(indicationScore,maxResult)){
+				ccReportMajor.set("result", maxResult);
+			}else {
+				ccReportMajor.set("result", indicationScore);
+			}
 			ccReportMajor.set("is_del", CcReportMajor.DEL_NO);
 			ccReportMajor.set("statistics_date", date);
 			ccReportMajor.set("create_date", date);
@@ -1146,9 +1246,8 @@ public class CcResultStatisticsService {
 	 * 注意：这里如果一个教师课程，有两个教学班，计算课程达成度报表数据的时候，直接把每个学生加起来，除以总学生数。而不是两个教学班的报表加一下除以二。
 	 * @param grade
 	 * @param versionId
-	 * @return
+	 * @return  这个是不包含剔除学生的-----
 	 */
-	@Transactional(readOnly = false)
 	public boolean statisticsCourseResultForJGExcept(Integer grade, Long versionId) {
 		/*
 		 * 1.  获取当前年级和版本下的所有课程
@@ -1178,9 +1277,6 @@ public class CcResultStatisticsService {
 		for(CcEduclass temp : ccEduclasseList) {
 			Long courseId = temp.getLong("course_id");
 			Long educlassId = temp.getLong("id");
-			if(courseId==918455){
-				Long courseIds = temp.getLong("course_id");
-			}
 
 			List<Long> educlassIdList = courseEduclassIdMap.get(courseId);
 			if(educlassIdList == null || educlassIdList.isEmpty()) {
@@ -1196,30 +1292,32 @@ public class CcResultStatisticsService {
 			educlassCourseIdMap.put(educlassId, courseId);
 		}
 
-		// 3. 找到个个教学班下，有多少个学生 。 课程下有多少学生
+		// 3. 找到个个教学班下，有多少个学生 。 课程下有多少学生 统计剔除学生后的教学班学生数量
 
 		List<CcEduclassStudent> ccEduclassStudentList = CcEduclassStudent.dao.countStudentNum(ccEduclassIdList, Boolean.TRUE);
-        Map<Long, Long> educlassStudentMap = new HashMap<>();
-        Map<Long, Long> courseStudentMap = new HashMap<>();
-        for(CcEduclassStudent tempCcEduclassStudent : ccEduclassStudentList) {
+		Map<Long, Long> educlassStudentMap = new HashMap<>();
+		Map<Long, Long> courseStudentMap = new HashMap<>();
+		for(CcEduclassStudent tempCcEduclassStudent : ccEduclassStudentList) {
 
-            Long eduClassId = tempCcEduclassStudent.getLong("eduClassId");
-            Long studentNum = tempCcEduclassStudent.getLong("studentNum");
-            educlassStudentMap.put(eduClassId, studentNum);
+			Long eduClassId = tempCcEduclassStudent.getLong("eduClassId");
+			Long studentNum = tempCcEduclassStudent.getLong("studentNum");
+			educlassStudentMap.put(eduClassId, studentNum);
 
-            Long coaurseId = educlassCourseIdMap.get(eduClassId);
-            Long courseStudentNum  = courseStudentMap.get(coaurseId);
-            courseStudentNum = courseStudentNum == null ? 0L : courseStudentNum;
-            courseStudentNum = courseStudentNum + studentNum;
-            courseStudentMap.put(coaurseId, courseStudentNum);
-        }
-        // 4.  获取这些课程目标下的学生总分和人数。注意：因为课程目标在课程下，所以不需要找到课程下的课程目标
-        Map<Long, BigDecimal> gradecomposeIndicationIdTotalScore = new HashMap<>();
-        Map<Long, BigDecimal> gradecomposeIndicationIdMaxScore = new HashMap<>();
-        Map<Long, BigDecimal> gradecomposeIndicationIdWeight = new HashMap<>();
+			Long coaurseId = educlassCourseIdMap.get(eduClassId);
+			Long courseStudentNum  = courseStudentMap.get(coaurseId);
+			courseStudentNum = courseStudentNum == null ? 0L : courseStudentNum;
+			courseStudentNum = courseStudentNum + studentNum;
+			courseStudentMap.put(coaurseId, courseStudentNum);
+		}
+		// 4.  获取这些课程目标下的学生总分和人数。注意：因为课程目标在课程下，所以不需要找到课程下的课程目标
+		Map<Long, BigDecimal> gradecomposeIndicationIdTotalScore = new HashMap<>();
+		Map<Long, BigDecimal> gradecomposeIndicationIdMaxScore = new HashMap<>();
+		Map<Long, BigDecimal> gradecomposeIndicationIdWeight = new HashMap<>();
+		Map<Long, Long> gradecomposeIndicationIdcourseId = new HashMap<>();
+		Map<Long, Long> gradecomposeIdMap = new HashMap<>();
 
-		// 3. 找到个个教学班下，总分有多少，（平均分有误，因为学生没有分数的，他无法计算）
-		//TODO 一个老师下面有多个教学班这里会出现问题，取其中一个教学班id就可以统计所有的了，所以去除多余的
+		//TODO 一个课程一个老师下面有多个教学班这里会出现问题，取其中一个教学班id就可以统计所有的了，所以去除多余的
+		//找出老师下面多个教学班其中的
 		List<CcEduclass> educlassIds = CcEduclass.dao.findEduclassIds(courseIdList);
 		List<Long> ccEduclassIdList1 = new ArrayList<>();
 		for (CcEduclass temp:educlassIds){
@@ -1230,166 +1328,204 @@ public class CcResultStatisticsService {
 				ccEduclassIdList1.add(classId);
 			}
 		}
+
+		// 3. 找到个个教学班下，总分有多少，（平均分有误，因为学生没有分数的，他无法计算）
+		//TODO 批次成绩加上之后会出现不同的课程的满分不相同，所以这个统计需要改动
+		//如果剔除学生的达成度不够，那么就是这个sql问题，因为统计时剔除的也统计里了。 目前没有发现问题。
 		List<CcScoreStuIndigrade> ccScoreStuIndigrades = CcScoreStuIndigrade.dao.findAllClassGradeByEduclassIds(ccEduclassIdList1);
 		//List<CcScoreStuIndigrade> ccScoreStuIndigrades = CcScoreStuIndigrade.dao.findCourseGradecomposeIdsGrade(ccEduclassIdList,null,null);
 
+		for(CcScoreStuIndigrade tempCcScoreStuIndigrade : ccScoreStuIndigrades) {
 
-
-        for(CcScoreStuIndigrade tempCcScoreStuIndigrade : ccScoreStuIndigrades) {
-
-            Long gradecomposeIndicationId = tempCcScoreStuIndigrade.getLong("gradecomposeIndicationId");
-            if (gradecomposeIndicationId==987410){
-            	int a=8;
+			Long gradecomposeIndicationId = tempCcScoreStuIndigrade.getLong("gradecomposeIndicationId");
+			BigDecimal weight = tempCcScoreStuIndigrade.getBigDecimal("weight");
+			//成绩总分
+			BigDecimal totalGrade = tempCcScoreStuIndigrade.getBigDecimal("totalGrade");
+			//满分
+			//BigDecimal maxScore = tempCcScoreStuIndigrade.getBigDecimal("maxScore");
+			gradecomposeIndicationIdTotalScore.put(gradecomposeIndicationId, totalGrade);
+			//gradecomposeIndicationIdMaxScore.put(gradecomposeIndicationId, maxScore);
+			gradecomposeIndicationIdWeight.put(gradecomposeIndicationId, weight);
+			gradecomposeIndicationIdcourseId.put(gradecomposeIndicationId,tempCcScoreStuIndigrade.getLong("course_id"));
+			gradecomposeIdMap.put(gradecomposeIndicationId,tempCcScoreStuIndigrade.getLong("gradecompose_id"));
+		}
+		// 课程下包含了那些 gradecomposeIndicationId。 通过课程目标关联过去
+		List<CcIndication> ccIndicationList = CcIndication.dao.findEachIndicationCourseAndGradecomposeIndicationByCourseIds(courseIdList);
+		Map<Long, CcIndication> ccIndicationMap = new HashMap<>();
+		// <courseId, Map<indication_course_id, Map<indicationId, List<gradecomposeIndicationId>>>>
+		//courseIndicationCourseIdIndicationIdGradecomposeIndicationIdMap主要是用于课程与课程目标关联
+		Map<Long, Map<Long,  Map<Long, List<Long>>>> courseIndicationCourseIdIndicationIdGradecomposeIndicationIdMap = new HashMap<>();
+		IdGenerate idGenerate = SpringContextHolder.getBean(IdGenerate.class);
+		for(CcIndication tempCcIndication : ccIndicationList) {
+			Long courseId = tempCcIndication.getLong("course_id");
+			Long indicationCourseId = tempCcIndication.getLong("indicationCourseId");
+			Long indicationId = tempCcIndication.getLong("id");
+			Long gradecomposeIndicationId = tempCcIndication.getLong("gradecomposeIndicationId");
+			//indicationId课程目标id
+			ccIndicationMap.put(indicationId, tempCcIndication);
+			Map<Long,  Map<Long, List<Long>>> indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap = courseIndicationCourseIdIndicationIdGradecomposeIndicationIdMap.get(courseId);
+			if(indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap == null || indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap.isEmpty()) {
+				indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap = new HashMap<>();
+				courseIndicationCourseIdIndicationIdGradecomposeIndicationIdMap.put(courseId, indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap);
 			}
-            BigDecimal weight = tempCcScoreStuIndigrade.getBigDecimal("weight");
-            //成绩总分
-            BigDecimal totalGrade = tempCcScoreStuIndigrade.getBigDecimal("totalGrade");
-            //满分
-            BigDecimal maxScore = tempCcScoreStuIndigrade.getBigDecimal("maxScore");
-            gradecomposeIndicationIdTotalScore.put(gradecomposeIndicationId, totalGrade);
-            gradecomposeIndicationIdMaxScore.put(gradecomposeIndicationId, maxScore);
-            gradecomposeIndicationIdWeight.put(gradecomposeIndicationId, weight);
-        }
-        // 课程下包含了那些 gradecomposeIndicationId。 通过课程目标关联过去
-        List<CcIndication> ccIndicationList = CcIndication.dao.findEachIndicationCourseAndGradecomposeIndicationByCourseIds(courseIdList);
-        Map<Long, CcIndication> ccIndicationMap = new HashMap<>();
-        // <courseId, Map<indication_course_id, Map<indicationId, List<gradecomposeIndicationId>>>>
-        //courseIndicationCourseIdIndicationIdGradecomposeIndicationIdMap主要是用于课程与课程目标关联
-        Map<Long, Map<Long,  Map<Long, List<Long>>>> courseIndicationCourseIdIndicationIdGradecomposeIndicationIdMap = new HashMap<>();
-        IdGenerate idGenerate = SpringContextHolder.getBean(IdGenerate.class);
-        for(CcIndication tempCcIndication : ccIndicationList) {
-            Long courseId = tempCcIndication.getLong("course_id");
-            Long indicationCourseId = tempCcIndication.getLong("indicationCourseId");
-            Long indicationId = tempCcIndication.getLong("id");
-            Long gradecomposeIndicationId = tempCcIndication.getLong("gradecomposeIndicationId");
-            //indicationId课程目标id
-            ccIndicationMap.put(indicationId, tempCcIndication);
-            Map<Long,  Map<Long, List<Long>>> indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap = courseIndicationCourseIdIndicationIdGradecomposeIndicationIdMap.get(courseId);
-            if(indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap == null || indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap.isEmpty()) {
-                indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap = new HashMap<>();
-                courseIndicationCourseIdIndicationIdGradecomposeIndicationIdMap.put(courseId, indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap);
-            }
-            Map<Long, List<Long>> indicationIdAndGradecomposeIndicationIdMap = indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap.get(indicationCourseId);
-            if(indicationIdAndGradecomposeIndicationIdMap == null || indicationIdAndGradecomposeIndicationIdMap.isEmpty()) {
-                indicationIdAndGradecomposeIndicationIdMap = new HashMap<>();
-                indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap.put(indicationCourseId, indicationIdAndGradecomposeIndicationIdMap);
-            }
-            List<Long> gradecomposeIndicationIdList = indicationIdAndGradecomposeIndicationIdMap.get(indicationId);
-            if(gradecomposeIndicationIdList == null || gradecomposeIndicationIdList.isEmpty()) {
-                gradecomposeIndicationIdList = new ArrayList<>();
-                indicationIdAndGradecomposeIndicationIdMap.put(indicationId, gradecomposeIndicationIdList);
-            }
-            gradecomposeIndicationIdList.add(gradecomposeIndicationId);
-        }
-        Boolean resultResult = Boolean.TRUE;
-        List<CcReportCourse> saveCcReportCourseList = new ArrayList<>();
-        // 获取老的数据，用于保存原有记录
-        List<CcReportCourse> oldCcReportCourseList = CcReportCourse.dao.findAllByGradeAndVersion(grade, versionId);
-        // Map<"grade,indicationCourseId", CcReportCourse>
-        Map<String, CcReportCourse> oldCcReportCourseMap = new HashMap<>();
-        for(CcReportCourse temp : oldCcReportCourseList) {
-            Long indicationCourseId = temp.getLong("indication_course_id");
-            String key = grade + "," + indicationCourseId;
-            oldCcReportCourseMap.put(key, temp);
-        }
-        List<Long> indicationCourseIds = new ArrayList<>();
-        // 准备指标点达成度数据，需要考虑专业方向
-        Map<String, BigDecimal> majorReportResultMap = Maps.newLinkedHashMap();
-        Map<String, Map<Long, BigDecimal>> courseGroupResultMap = Maps.newHashMap();
-        // 准备一份map，用于数据获取
-        List<CcIndicationCourse> ccIndicationCourses = CcIndicationCourse.dao.findByVersionId(versionId);
-        Map<Long, CcIndicationCourse> indicationCourseMap = new HashMap<>();
-        for(CcIndicationCourse temp : ccIndicationCourses) {
-            Long indicationCourseId = temp.getLong("id");
-            indicationCourseMap.put(indicationCourseId, temp);
-        }
-        Date date = new Date();
-        // 遍历整个课程，设置数据
-        for(Long courseId : courseIdList) {
-            BigDecimal studentNum = new BigDecimal(courseStudentMap.get(courseId) == null ? 0 : courseStudentMap.get(courseId));
-            Map<Long,  Map<Long, List<Long>>> indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap = courseIndicationCourseIdIndicationIdGradecomposeIndicationIdMap.get(courseId);
-            // 没加过指标点
-            if(indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap == null) {
-                continue;
-            }
-            // 遍历指标点
-            for(Entry<Long, Map<Long, List<Long>>> indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdEntry : indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap.entrySet()) {
-                Long indicationCourseId = indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdEntry.getKey();
-                Map<Long, List<Long>> indicationIdAndgradecomposeIndicationIdMap = indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdEntry.getValue();
-                BigDecimal result = new BigDecimal(0);
-                // 遍历课程目标
-                for(Entry<Long, List<Long>> indicationIdAndGradecomposeIndicationIdEntry : indicationIdAndgradecomposeIndicationIdMap.entrySet()) {
-                    /*
-                     *  注意：
-                     *  这里如果一个教师课程，有两个教学班，计算课程达成度报表数据的时候，直接把每个学生加起来，除以总学生数。
-                     *  而不是两个教学班的报表加一下除以二。
-                     *  所以不能通过cc_edupoint_aims_achieve的数据处理
-                     *  要重新计算所有学生的总分 和 总人数，算出平均分，然后处理 （即：【课程下的教学班们】 交集 ）
-                     *  result1 = mom1/(son1*期望值)
-                     *  result2 = mom2/(son2*期望值)
-                     *  result3 = mom3/(son3*期望值)
-                     *  result  = 指标点权重 * (result1 , result2, result3)min
-                     *  这里的算法没有改
-                     *  指标点达成度应该为 课程目标大达成度的最小值*指标点权重 也就是result
-                     *  result1、result2、result3 应该为课程达成度
-                     *  课程达成度计算公式(平均分1*权重1+平均分2*权重2+平均分3*权重3……)/(总分1*权重1+总分2*权重2+总分3*权重3……)
-                     *  (平均分1*权重1+平均分2*权重2+平均分3*权重3……)相当于mom
-                     *  总分1*权重1+总分2*权重2+总分3*权重3……)相当于son
-                     */
-                    BigDecimal resultTemp = new BigDecimal(0);
-                    BigDecimal mom = new BigDecimal(0);
-                    BigDecimal son = new BigDecimal(0);
-                    // 课程目标
-                    Long indicationId = indicationIdAndGradecomposeIndicationIdEntry.getKey();
-                    List<Long> gradecomposeIndicationIdList = indicationIdAndGradecomposeIndicationIdEntry.getValue();
-                    // 遍历每个 课程目标的成绩组成
-                    for(Long gradecomposeIndicatoinId : gradecomposeIndicationIdList) {
-                        BigDecimal totalGrade = gradecomposeIndicationIdTotalScore.get(gradecomposeIndicatoinId);
-                        BigDecimal maxScore = gradecomposeIndicationIdMaxScore.get(gradecomposeIndicatoinId);
-                        // 当不存在数据的时候
-                        if(totalGrade == null) {
-                            continue;
-                        }
-                        //权重
-                        BigDecimal weight = gradecomposeIndicationIdWeight.get(gradecomposeIndicatoinId);
-                        //平均分
-                        BigDecimal avgGrade = totalGrade.divide(studentNum, 5, RoundingMode.HALF_UP);
-                        //平均分*权重
-                        mom = mom.add(avgGrade.multiply(weight));
-                        //满分*权重
-                        son = son.add(maxScore.multiply(weight));
-                    }
-                    CcIndication ccIndication = ccIndicationMap.get(indicationId);
-                    if(ccIndication == null) {
-                        continue;
-                    }
-                    BigDecimal expectedValue = ccIndication.getBigDecimal("expected_value");
-                    if(son.compareTo(new BigDecimal(0)) == 0) {
-                        continue;
-                    }
-                    //课程目标达成度算法(平均分1*权重1+平均分2*权重2+平均分3*权重3……)/(总分1*权重1+总分2*权重2+总分3*权重3……) mom/son
-                    resultTemp = mom.divide(son, 5, RoundingMode.HALF_UP);
-                    //期望值
-                    //resultTemp = resultTemp.divide(expectedValue, 5, RoundingMode.HALF_UP);
-                    // 如果前者更小，用前者
-                    result = result.compareTo(new BigDecimal(0)) == 0 ? resultTemp : result.compareTo(resultTemp) == -1 ? result : resultTemp;
-                }
-                CcIndicationCourse ccIndicationCourse = indicationCourseMap.get(indicationCourseId);
-                if(ccIndicationCourse == null) {
-                    continue;
-                }
-                BigDecimal weight = ccIndicationCourse.getBigDecimal("weight");
-                //这个应该是指标点达成度吧
-                result = result.multiply(weight);
+			Map<Long, List<Long>> indicationIdAndGradecomposeIndicationIdMap = indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap.get(indicationCourseId);
+			if(indicationIdAndGradecomposeIndicationIdMap == null || indicationIdAndGradecomposeIndicationIdMap.isEmpty()) {
+				indicationIdAndGradecomposeIndicationIdMap = new HashMap<>();
+				indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap.put(indicationCourseId, indicationIdAndGradecomposeIndicationIdMap);
+			}
+			List<Long> gradecomposeIndicationIdList = indicationIdAndGradecomposeIndicationIdMap.get(indicationId);
+			if(gradecomposeIndicationIdList == null || gradecomposeIndicationIdList.isEmpty()) {
+				gradecomposeIndicationIdList = new ArrayList<>();
+				indicationIdAndGradecomposeIndicationIdMap.put(indicationId, gradecomposeIndicationIdList);
+			}
+			gradecomposeIndicationIdList.add(gradecomposeIndicationId);
+		}
+		Boolean resultResult = Boolean.TRUE;
+		List<CcReportCourse> saveCcReportCourseList = new ArrayList<>();
+		// 获取老的数据，用于保存原有记录
+		List<CcReportCourse> oldCcReportCourseList = CcReportCourse.dao.findAllByGradeAndVersion(grade, versionId);
+		// Map<"grade,indicationCourseId", CcReportCourse>
+		Map<String, CcReportCourse> oldCcReportCourseMap = new HashMap<>();
+		for(CcReportCourse temp : oldCcReportCourseList) {
+			Long indicationCourseId = temp.getLong("indication_course_id");
+			String key = grade + "," + indicationCourseId;
+			oldCcReportCourseMap.put(key, temp);
+		}
+		List<Long> indicationCourseIds = new ArrayList<>();
+		// 准备指标点达成度数据，需要考虑专业方向
+		Map<String, BigDecimal> majorReportResultMap = Maps.newLinkedHashMap();
+		Map<String, Map<Long, BigDecimal>> courseGroupResultMap = Maps.newHashMap();
+		// 准备一份map，用于数据获取
+		List<CcIndicationCourse> ccIndicationCourses = CcIndicationCourse.dao.findByVersionId(versionId,1);
+		Map<Long, CcIndicationCourse> indicationCourseMap = new HashMap<>();
+		for(CcIndicationCourse temp : ccIndicationCourses) {
+			Long indicationCourseId = temp.getLong("id");
+			indicationCourseMap.put(indicationCourseId, temp);
+		}
+		Date date = new Date();
+		// 遍历整个课程，设置数据
+		for(Long courseId : courseIdList) {
+			BigDecimal studentNum = new BigDecimal(courseStudentMap.get(courseId) == null ? 0 : courseStudentMap.get(courseId));
+			Map<Long,  Map<Long, List<Long>>> indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap = courseIndicationCourseIdIndicationIdGradecomposeIndicationIdMap.get(courseId);
+			// 没加过指标点
+			if(indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap == null) {
+				continue;
+			}
+			// 遍历指标点
+			for(Entry<Long, Map<Long, List<Long>>> indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdEntry : indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap.entrySet()) {
+				Long indicationCourseId = indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdEntry.getKey();
+				Map<Long, List<Long>> indicationIdAndgradecomposeIndicationIdMap = indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdEntry.getValue();
+				BigDecimal result = new BigDecimal(0);
+				// 遍历课程目标
+				for(Entry<Long, List<Long>> indicationIdAndGradecomposeIndicationIdEntry : indicationIdAndgradecomposeIndicationIdMap.entrySet()) {
+					/*
+					 *  注意：
+					 *  这里如果一个教师课程，有两个教学班，计算课程达成度报表数据的时候，直接把每个学生加起来，除以总学生数。
+					 *  而不是两个教学班的报表加一下除以二。
+					 *  所以不能通过cc_edupoint_aims_achieve的数据处理
+					 *  要重新计算所有学生的总分 和 总人数，算出平均分，然后处理 （即：【课程下的教学班们】 交集 ）
+					 *  result1 = mom1/(son1*期望值)
+					 *  result2 = mom2/(son2*期望值)
+					 *  result3 = mom3/(son3*期望值)
+					 *  result  = 指标点权重 * (result1 , result2, result3)min
+					 *  这里的算法没有改
+					 *  指标点达成度应该为 课程目标大达成度的最小值*指标点权重 也就是result
+					 *  result1、result2、result3 应该为课程达成度
+					 *  课程达成度计算公式(平均分1*权重1+平均分2*权重2+平均分3*权重3……)/(总分1*权重1+总分2*权重2+总分3*权重3……)
+					 *  (平均分1*权重1+平均分2*权重2+平均分3*权重3……)相当于mom
+					 *  总分1*权重1+总分2*权重2+总分3*权重3……)相当于son
+					 */
 
-                String key = grade + "," + indicationCourseId;
-                CcReportCourse oldCcReportCourse = oldCcReportCourseMap.get(key);
+					BigDecimal resultTemp = new BigDecimal(0);
+					BigDecimal mom = new BigDecimal(0);
+					BigDecimal son = new BigDecimal(0);
+					// 课程目标
+					Long indicationId = indicationIdAndGradecomposeIndicationIdEntry.getKey();
+					List<Long> gradecomposeIndicationIdList = indicationIdAndGradecomposeIndicationIdEntry.getValue();
+					// 遍历每个 课程目标的成绩组成
+					for(Long gradecomposeIndicatoinId : gradecomposeIndicationIdList) {
+						BigDecimal totalGrade = gradecomposeIndicationIdTotalScore.get(gradecomposeIndicatoinId);
+						BigDecimal maxScore = gradecomposeIndicationIdMaxScore.get(gradecomposeIndicatoinId);
+						// 当不存在数据的时候
+						if(totalGrade == null) {
+							continue;
+						}
 
-                CcReportCourse ccReportCourse = new CcReportCourse();
-                ccReportCourse.set("grade", grade);
-                ccReportCourse.set("indication_course_id", indicationCourseId);
+
+						//权重
+						BigDecimal weight = gradecomposeIndicationIdWeight.get(gradecomposeIndicatoinId);
+						//平均分
+						BigDecimal avgGrade = totalGrade.divide(studentNum, 5, RoundingMode.HALF_UP);
+						//平均分*权重
+						mom = mom.add(avgGrade.multiply(weight));
+
+						//TODO 2020/09/07 一个课程多个教学班满分计算方式改为(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)/总学生数，
+						// 权重应该是相同的，不然这个还要改
+
+						Long courseIds = gradecomposeIndicationIdcourseId.get(gradecomposeIndicatoinId);
+						//成绩组成id
+						Long gradecomposeId = gradecomposeIdMap.get(gradecomposeIndicatoinId);
+						//(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)
+						BigDecimal maxScores = new BigDecimal("0");
+						//统计每个教学班的学生个数
+						List<CcEduclassStudent> ccEduclassStudents = CcEduclassStudent.dao.countStudentNums(courseIds);
+						for (CcEduclassStudent educlassStudent : ccEduclassStudents){
+							Long edClassId = educlassStudent.getLong("id");
+
+							Object studentNums = educlassStudent.get("studentNum");
+							if (studentNums==null || studentNums.equals("")){
+								continue;
+							}
+							int classStudentNum = Integer.parseInt(educlassStudent.get("studentNum")+"");
+							BigDecimal studentNumBig = new BigDecimal(classStudentNum);
+
+							CcCourseGradecomposeIndication maxscoreAndWeight = CcCourseGradecomposeIndication.dao.findGradecomposeMaxscoreAndWeight(edClassId, indicationId, gradecomposeId);
+							if (maxscoreAndWeight==null){
+								continue;
+							}
+							//(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)
+							BigDecimal indicationMaxScore = maxscoreAndWeight.getBigDecimal("max_score");
+							maxScores=maxScores.add(indicationMaxScore.multiply(studentNumBig));
+
+						}
+						//(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)/总人数*权重
+						son = son.add(maxScores.divide(studentNum,2).multiply(weight));
+					}
+					CcIndication ccIndication = ccIndicationMap.get(indicationId);
+					if(ccIndication == null) {
+						continue;
+					}
+					BigDecimal expectedValue = ccIndication.getBigDecimal("expected_value");
+					if(son.compareTo(new BigDecimal(0)) == 0) {
+						continue;
+					}
+					//课程目标达成度算法(平均分1*权重1+平均分2*权重2+平均分3*权重3……)/(总分1*权重1+总分2*权重2+总分3*权重3……) mom/son
+					resultTemp = mom.divide(son, 5, RoundingMode.HALF_UP);
+					//期望值
+					//resultTemp = resultTemp.divide(expectedValue, 5, RoundingMode.HALF_UP);
+					// 如果前者更小，用前者
+					result = result.compareTo(new BigDecimal(0)) == 0 ? resultTemp : result.compareTo(resultTemp) == -1 ? result : resultTemp;
+				}
+				CcIndicationCourse ccIndicationCourse = indicationCourseMap.get(indicationCourseId);
+				if(ccIndicationCourse == null) {
+					continue;
+				}
+				BigDecimal weight = ccIndicationCourse.getBigDecimal("weight");
+				//这个应该是指标点达成度吧
+				result = result.multiply(weight);
+
+				String key = grade + "," + indicationCourseId;
+				CcReportCourse oldCcReportCourse = oldCcReportCourseMap.get(key);
+
+				CcReportCourse ccReportCourse = new CcReportCourse();
+				ccReportCourse.set("grade", grade);
+				ccReportCourse.set("indication_course_id", indicationCourseId);
 				if(oldCcReportCourse != null) {
-					ccReportCourse.set("result", PriceUtils.currency(oldCcReportCourse.getBigDecimal("result")));
+					BigDecimal result1 = oldCcReportCourse.getBigDecimal("result");
+
+					if (result1 != null){
+						ccReportCourse.set("result", PriceUtils.currency(oldCcReportCourse.getBigDecimal("result")));
+					}
 				}
 				ccReportCourse.set("except_result", PriceUtils.currency(result));
 				ccReportCourse.set("is_del", CcReportCourse.DEL_NO);
@@ -1405,7 +1541,7 @@ public class CcResultStatisticsService {
 				// 记录专业及其每个方向上的指标点达成度
 				Long majorDirectionId = ccIndicationCourse.getLong("direction_id");
 				Long courseGroupId = ccIndicationCourse.getLong("course_group_id");
-
+				Long teachGroupId = ccIndicationCourse.getLong("teach_group_id");
 				// 无专业方向，赋予专业方向编号无专业方向编号
 				if (majorDirectionId == null) {
 					majorDirectionId = CcReportMajor.NO_MAJORDIRECTION_ID;
@@ -1419,28 +1555,31 @@ public class CcResultStatisticsService {
 					majorReportResultMap.put(indicationMajorResultKey, new BigDecimal(0));
 				}
 
-				// 课程组编号
-				if (courseGroupId == null) {
-					majorReportResultMap.put(indicationMajorResultKey
-							, PriceUtils._add(PriceUtils.currency(majorReportResultMap.get(indicationMajorResultKey))
-									, PriceUtils.currency(result)));
 
-				} else {
-					Map<Long, BigDecimal> courseGroupResult = null;
-					if (courseGroupResultMap.get(indicationMajorResultKey) == null) {
-						courseGroupResult = Maps.newHashMap();
-						courseGroupResultMap.put(indicationMajorResultKey, courseGroupResult);
+				//多选一编号 分级教学编号  先剔除分级教学的课程达成度 在下面统计专业指标点达成度再加上 2020/09/09
+				if (teachGroupId == null){
+					if (courseGroupId == null ) {
+						majorReportResultMap.put(indicationMajorResultKey
+								, PriceUtils._add(PriceUtils.currency(majorReportResultMap.get(indicationMajorResultKey))
+										, PriceUtils.currency(result)));
+
 					} else {
-						courseGroupResult = courseGroupResultMap.get(indicationMajorResultKey);
-					}
 
-					BigDecimal minScore = courseGroupResult.get(courseGroupId);
-					// 当课程组中该门课成绩更小或是之前课程组未有成绩时，课程组成绩为该门课成绩
-					if (minScore == null || PriceUtils.greaterThan(minScore, result)) {
-						minScore = result;
-					}
+						Map<Long, BigDecimal> courseGroupResult = null;
+						if (courseGroupResultMap.get(indicationMajorResultKey) == null) {
+							courseGroupResult = Maps.newHashMap();
+							courseGroupResultMap.put(indicationMajorResultKey, courseGroupResult);
+						} else {
+							courseGroupResult = courseGroupResultMap.get(indicationMajorResultKey);
+						}
+						BigDecimal minScore = courseGroupResult.get(courseGroupId);
+						// 当课程组中该门课成绩更小或是之前课程组未有成绩时，课程组成绩为该门课成绩
+						if (minScore == null || PriceUtils.greaterThan(minScore, result)) {
+							minScore = result;
+						}
+						courseGroupResult.put(courseGroupId, minScore);
 
-					courseGroupResult.put(courseGroupId, minScore);
+					}
 				}
 			}
 		}
@@ -1531,28 +1670,44 @@ public class CcResultStatisticsService {
 
 			String key = grade + "," + indicationId;
 			CcReportMajor oldCcReportMajor = oldCcReportMajorMap.get(key);
-            BigDecimal maxResult = new BigDecimal(1);
-            CcReportMajor ccReportMajor = new CcReportMajor();
+			BigDecimal maxResult = new BigDecimal(1);
+			CcReportMajor ccReportMajor = new CcReportMajor();
 			ccReportMajor.set("indication_id", indicationId);
 			ccReportMajor.set("grade", grade);
 			ccReportMajor.set("major_direction_id", majorDirectionId);
-            if(oldCcReportMajor != null) {
-                //如果值超过1就设置为1
-                if(PriceUtils.greaterThan(PriceUtils.currency(oldCcReportMajor.getBigDecimal("result")),maxResult))
-                {
-                    ccReportMajor.set("result", PriceUtils.currency(maxResult));
-                }else{
-                    ccReportMajor.set("result", PriceUtils.currency(oldCcReportMajor.getBigDecimal("result")));
-                }
+
+			//TODO 2020/09/09因为分级教学 只要课程分组中合计最小的值加入
+			BigDecimal minTeacherResult = new BigDecimal("0");
+			List<CcIndicationCourse> teachIndicationCourses = CcIndicationCourse.dao.sumTeachGroupResult(versionId, indicationId, null);
+			for (CcIndicationCourse temp: teachIndicationCourses){
+				BigDecimal teachMaxResult = temp.getBigDecimal("teachMaxResult");
+				if (teachMaxResult !=null){
+					minTeacherResult=minTeacherResult.add(teachMaxResult);
+				}
+
+				System.out.println(teachMaxResult);
+
+			}
+
+			if(oldCcReportMajor != null) {
+				BigDecimal subResult = oldCcReportMajor.getBigDecimal("result").add(minTeacherResult);
+				//如果值超过1就设置为1
+				if(PriceUtils.greaterThan(PriceUtils.currency(subResult),maxResult))
+				{
+					ccReportMajor.set("result", PriceUtils.currency(maxResult));
+				}else{
+					ccReportMajor.set("result", PriceUtils.currency(subResult));
+				}
 
 
-            }
-            //如果值超过1就设置为1
-            if (PriceUtils.greaterThan(indicationScore,maxResult)){
-                ccReportMajor.set("except_result", maxResult);
-            }else {
-                ccReportMajor.set("except_result", indicationScore);
-            }
+			}
+			indicationScore=indicationScore.add(minTeacherResult);
+			//如果值超过1就设置为1
+			if (PriceUtils.greaterThan(indicationScore,maxResult)){
+				ccReportMajor.set("except_result", maxResult);
+			}else {
+				ccReportMajor.set("except_result", indicationScore);
+			}
 
 			ccReportMajor.set("is_del", CcReportMajor.DEL_NO);
 			ccReportMajor.set("statistics_date", date);
@@ -1838,7 +1993,7 @@ public class CcResultStatisticsService {
 			}
 		}
 
-		List<CcIndicationCourse> ccIndicationCourses = CcIndicationCourse.dao.findByVersionId(versionId);
+		List<CcIndicationCourse> ccIndicationCourses = CcIndicationCourse.dao.findByVersionId(versionId,1);
 
 		// 保存课程达成度记录
 		Date date = new Date();
@@ -2076,16 +2231,16 @@ public class CcResultStatisticsService {
 					}
 				}
 			}
-            BigDecimal maxResult = new BigDecimal(1);
-            CcReportMajor ccReportMajor = new CcReportMajor();
+			BigDecimal maxResult = new BigDecimal(1);
+			CcReportMajor ccReportMajor = new CcReportMajor();
 			ccReportMajor.set("indication_id", indicationId);
 			ccReportMajor.set("grade", grade);
 			ccReportMajor.set("major_direction_id", majorDirectionId);
 			//如果值大于1就设为1
 			if (PriceUtils.greaterThan(indicationScore,maxResult)){
-                ccReportMajor.set("result", maxResult);
-            }else{
-			    ccReportMajor.set("result", indicationScore);
+				ccReportMajor.set("result", maxResult);
+			}else{
+				ccReportMajor.set("result", indicationScore);
 			}
 			ccReportMajor.set("is_del", CcReportMajor.DEL_NO);
 			ccReportMajor.set("statistics_date", date);

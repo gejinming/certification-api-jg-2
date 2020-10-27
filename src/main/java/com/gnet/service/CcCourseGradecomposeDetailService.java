@@ -77,12 +77,15 @@ public class CcCourseGradecomposeDetailService {
 		if(!courseGradeComposeDetailList.isEmpty() && courseGradecomposeIndicationList.isEmpty()){
 			return ServiceResponse.error("更新分数前先维护开课课程成绩组成元素和指标点关系 ");
 		}
-		
+		CcTeacherCourse teacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradecomposeId);
+		//达成度计算类型
+		Integer resultType = teacherCourse.getInt("result_type");
 		Map<Long, BigDecimal> scoreMap = Maps.newHashMap();
 		for(CcCourseGradeComposeDetail temp: courseGradeComposeDetailList){
 			scoreMap.put(temp.getLong("indication_id"), temp.getBigDecimal("allScore"));
 		}
 		//TODO 2020/07/10增加了题目批次，每个学生的课程目标成绩=ccCourseGradecomposeStudetails的成绩/包含这个课程目标批次的数量
+		//TODO 2020/09/02 改为每个学生的课程目标成绩=ccCourseGradecomposeStudetails的成绩/批次的数量
 		Pageable pageable = new Pageable(null, null);
 		Page<CcCourseGradecomposeBatch> batchList = CcCourseGradecomposeBatch.dao.page(pageable, courseGradecomposeId);
 		List<CcCourseGradecomposeBatch> batchLists = batchList.getList();
@@ -92,15 +95,17 @@ public class CcCourseGradecomposeDetailService {
 		for(CcCourseGradecomposeIndication temp : courseGradecomposeIndicationList){
 			Long indicationId = temp.getLong("indication_id");
 			BigDecimal score = scoreMap.get(temp.getLong("indication_id"));
-
-			//1.判断是否存在批次
-			if (batchLists.size() != 0){
-				//2.查询包含这个课程目标的批次数量
-				List<CcCourseGradecomposeDetailIndication> batchList1 = CcCourseGradecomposeDetailIndication.dao.findBatchList(indicationId, courseGradecomposeId);
-				int batchNum = batchList1.size();
-				if (batchList1.size() !=0){
-					BigDecimal number = new BigDecimal(batchNum);
-					score = PriceUtils.div(score, number, 2);
+			//2020/10/27财经学院的满分不做处理
+			if (!resultType.equals(CcTeacherCourse.RESULT_TYPE_SCORE2)){
+				//1.判断是否存在批次
+				if (batchLists.size() != 0){
+					//2.查询包含这个课程目标的批次数量
+					//List<CcCourseGradecomposeDetailIndication> batchList1 = CcCourseGradecomposeDetailIndication.dao.findBatchList(indicationId, courseGradecomposeId);
+					int batchNum = batchLists.size();
+					//if (batchList1.size() !=0){
+						BigDecimal number = new BigDecimal(batchNum);
+						score = PriceUtils.div(score, number, 2);
+					//}
 				}
 			}
 			temp.set("modify_date", date);
@@ -173,17 +178,18 @@ public class CcCourseGradecomposeDetailService {
 			for (CcCourseGradecomposeStudetail temp: ccCourseGradecomposeStudetails){
 				BigDecimal score = temp.getBigDecimal("score");
 				Long indicationId = temp.getLong("indication_id");
+				//TODO 2020.9.2改为除以批次数量
 				//2.查询包含这个课程目标的批次数量
-				List<CcCourseGradecomposeDetailIndication> batchList1 = CcCourseGradecomposeDetailIndication.dao.findBatchList(indicationId, courseGradeComposeId);
-				int batchNum = batchList1.size();
+				//List<CcCourseGradecomposeDetailIndication> batchList1 = CcCourseGradecomposeDetailIndication.dao.findBatchList(indicationId, courseGradeComposeId);
+				int batchNum = batchLists.size();
 
-				if (batchList1.size() !=0){
+				//if (batchList1.size() !=0){
 
 					BigDecimal number = new BigDecimal(batchNum);
 					//3.用处理好的课程目标总成绩/包含这个课程目标的批次数量
 					BigDecimal divideScore = PriceUtils.div(score, number, 2);
 					temp.set("score",divideScore);
-				}
+				//}
 
 
 			}

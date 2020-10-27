@@ -87,6 +87,19 @@ public class CcCourseHierarchySecondary extends DbModel<CcCourseHierarchySeconda
 		return CcCourseHierarchySecondary.dao.paginate(pageable, selectString, exceptSql.toString(), params.toArray());
 
 	}
-
+	/*
+	 * @param name
+	 * @return com.gnet.model.admin.CcCourseHierarchy
+	 * @author Gejm
+	 * @description: 通过层次名找信息
+	 * @date 2020/10/12 17:22
+	 */
+	public CcCourseHierarchySecondary findHierarchySecondaryId(String name,Long planId){
+		List<Object> params = Lists.newArrayList();
+		StringBuilder sql = new StringBuilder("select * from " + CcCourseHierarchySecondary.dao.tableName + " where name=? and plan_id=? and is_del=0 limit 1");
+		params.add(name);
+		params.add(planId);
+		return findFirst(sql.toString(),params.toArray());
+	}
 
 }

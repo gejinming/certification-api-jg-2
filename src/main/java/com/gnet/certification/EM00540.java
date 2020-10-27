@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.gnet.model.admin.CcTeacherCourse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -53,7 +54,9 @@ public class EM00540 extends BaseApi implements IApi{
 		BigDecimal maxScore = paramsBigDecimalFilter(param.get("maxScore"));
 		String remark = paramsStringFilter(param.get("remark"));
 		List<HashMap> scoreSectionRemarks = paramsJSONArrayFilter(param.get("scoreSectionRemarks"), HashMap.class);
-
+		CcTeacherCourse teacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradecomposeId);
+		//达成度计算类型
+		Integer resultType = teacherCourse.getInt("result_type");
 		if(indicationId == null){
 			return renderFAIL("1111", response, header);
 		}
@@ -65,10 +68,13 @@ public class EM00540 extends BaseApi implements IApi{
 		if(weight == null){
 			return renderFAIL("0491", response, header);
 		}
-
-		if(weight.equals(CcCourseGradecomposeIndication.MIN_WEIGHT) || PriceUtils.greaterThan(CcCourseGradecomposeIndication.MIN_WEIGHT, weight)){
-			return renderFAIL("0763", response, header);
+		//不是财经大学的算法需要验证
+		if (!resultType.equals(CcTeacherCourse.RESULT_TYPE_SCORE2)){
+			if(weight.equals(CcCourseGradecomposeIndication.MIN_WEIGHT) || PriceUtils.greaterThan(CcCourseGradecomposeIndication.MIN_WEIGHT, weight)){
+				return renderFAIL("0763", response, header);
+			}
 		}
+
 		//单个权重不能超过1
 		if(PriceUtils.greaterThan(weight, CcCourseGradecomposeIndication.MAX_WEIGHT)){
 			return renderFAIL("0494", response, header);

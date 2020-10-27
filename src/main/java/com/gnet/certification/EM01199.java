@@ -42,7 +42,7 @@ public class EM01199 extends BaseApi implements IApi {
         //判段成绩是否全部录入
         //1获取教学班人数
         int studentNum = CcEduclassStudent.dao.findStuInfoByClassId(eduClassId).size();
-        if (inputType==1){
+        if (inputType==1 || inputType==4){
             //直接录入的方式
             //2获取这个成绩组成的课程目标数量
             int indicationNum = CcIndication.dao.findCourseGradeComposeId(courseGradeComposeId).size();

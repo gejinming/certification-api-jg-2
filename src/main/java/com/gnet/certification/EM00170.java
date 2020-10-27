@@ -130,6 +130,7 @@ public class EM00170 extends BaseApi implements IApi {
 		}
 		
 		for (CcCourse temp : ccCourseList) {
+
 			Map<String, Object> ccCourse = new HashMap<>();
 			ccCourse.put("id", temp.get("id"));
 			ccCourse.put("createDate", temp.get("create_date"));
@@ -178,6 +179,8 @@ public class EM00170 extends BaseApi implements IApi {
 			ccCourse.put("sort", temp.get("sort"));
 			ccCourse.put("type", temp.get("type"));
 			ccCourse.put("typeName", DictUtils.findLabelByTypeAndKey("courseType", temp.getInt("type")));
+			ccCourse.put("courseType",temp.get("course_type"));
+			ccCourse.put("courseScoreType",temp.get("course_score_type"));
 			
 			// 获取培养计划课程学期表
 			List<CcPlanTermCourse> ccPlanTermCourseMapList = coursePlanTermCourseMap.get(temp.get("id"));

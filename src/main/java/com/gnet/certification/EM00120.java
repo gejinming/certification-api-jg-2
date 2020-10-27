@@ -27,22 +27,22 @@ import com.jfinal.plugin.activerecord.Page;
 
 /**
  * 查看毕业要求列表
- * 
+ *
  * @author SY
- * 
+ *
  * @date 2016年06月24日 20:55:57
- * 
+ *
  */
 @Service("EM00120")
 @Transactional(readOnly=true)
 public class EM00120 extends BaseApi implements IApi {
-	
+
 	@Override
 	public Response excute(Request request, Response response, ResponseHeader header, String method) {
-		
+
 		@SuppressWarnings("unchecked")
 		Map<String, Object> param = request.getData();
-		
+
 		Integer pageNumber = paramsIntegerFilter(param.get("pageNumber"));
 		Integer pageSize = paramsIntegerFilter(param.get("pageSize"));
 		String orderProperty = paramsStringFilter(param.get("orderProperty"));
@@ -54,7 +54,7 @@ public class EM00120 extends BaseApi implements IApi {
 		if(param.containsKey("directionId") && directionId == null){
 			return renderFAIL("1009", response, header, "directionId的参数值非法");
 		}
-		
+
 		Long majorId = paramsLongFilter(param.get("majorId"));
 		if(param.containsKey("majorId") && majorId == null){
 			return renderFAIL("1009", response, header, "majorId的参数值非法");
@@ -63,7 +63,7 @@ public class EM00120 extends BaseApi implements IApi {
 		if(param.containsKey("grade") && grade == null){
 			return renderFAIL("1009", response, header, "grade的参数值非法");
 		}
-		
+
 		if(majorId != null && grade != null){
 			graduateVerId = CcVersion.dao.findNewestVersion(majorId, grade);
 			if (graduateVerId == null) {
@@ -73,9 +73,9 @@ public class EM00120 extends BaseApi implements IApi {
 		if(graduateVerId == null){
 			return renderFAIL("0181", response, header);
 		}
-		
+
 		Pageable pageable = new Pageable(pageNumber, pageSize);
-		
+
 		// 排序处理
 		try {
 			ParamSceneUtils.toOrder(pageable, orderProperty, orderDirection, CcGraduateOrderType.class);
@@ -84,7 +84,7 @@ public class EM00120 extends BaseApi implements IApi {
 		} catch (NotFoundOrderDirectionException e) {
 			return renderFAIL("0086", response, header);
 		}
-		
+
 
 		Map<String, Object> ccGraduatesMap = Maps.newHashMap();
 		Page<CcGraduate> ccGraduatePage = CcGraduate.dao.page(pageable, graduateVerId, indexNum, content);
@@ -101,12 +101,12 @@ public class EM00120 extends BaseApi implements IApi {
 		Map<Long, List<Map<String, Object>>> map = new HashMap<>();
 		// 通过毕业要求编号获取指标点信息，之后放到他的list中
 		Long[] ccGraduateIds = new Long[ccGraduateList.size()];
-		
+
 		for(int i = 0; i < ccGraduateList.size(); i++) {
 			ccGraduateIds[i] = ccGraduateList.get(i).getLong("id");
 			map.put(ccGraduateIds[i], new ArrayList<Map<String, Object>>());
 		}
-		
+
 		if(ccGraduateIds.length != 0) {
 			List<CcIndicationCourse> indicationCourseList = CcIndicationCourse.dao.findByGraduateIdsAndDirectionId(ccGraduateIds, directionId);
 			CcIndicationCourseService ccIndicationCourseService = SpringContextHolder.getBean(CcIndicationCourseService.class);
@@ -128,10 +128,10 @@ public class EM00120 extends BaseApi implements IApi {
 				tempList.add(tempMap);
 				map.put(graduateId, tempList);
 			}
-			
+
 		}
 
-		
+
 		// 返回内容过滤
 		List<Map<String, Object>> list = new ArrayList<>();
 		for (CcGraduate temp : ccGraduateList) {
@@ -146,10 +146,10 @@ public class EM00120 extends BaseApi implements IApi {
 			tempMap.put("remark", temp.get("remark"));
 			list.add(tempMap);
 		}
-		
+
 		ccGraduatesMap.put("list", list);
-		
+
 		return renderSUC(ccGraduatesMap, response, header);
 	}
-	
+
 }

@@ -309,4 +309,23 @@ public class Office extends DbModel<Office> {
 		sql.append("where sop.office_ids like '" + officePath + "%' and so.type = ? and so.is_del = ? ");
 		return Office.dao.find(sql.toString(), type, DEL_NO);
 	}
+	/*
+	 * @param majorId
+	 * @return com.gnet.model.admin.Office
+	 * @author Gejm
+	 * @description: 专业名称、院系名称、学校名称
+	 * @date 2020/9/11 15:42
+	 */
+	public Office findMajorInfo(Long majorId,String roleId){
+		StringBuilder sql = new StringBuilder("select a.name majorName,b.name collegeName,c.name schoolName,ct.name from sys_office a ");
+		sql.append("left join sys_office b on a.parentid=b.id and b.is_del=0 ");
+		sql.append("left join sys_office c on b.parentid=c.id and c.is_del=0 ");
+		sql.append("left join cc_teacher ct on ct.major_id=a.id  and ct.is_del=0 ");
+		sql.append("left join sys_user_role sur on sur.user_id=ct.id ");
+		sql.append("where a.id =? and a.is_del=0 ");
+		if (roleId!=null){
+			sql.append("and sur.roles like '%" + StringEscapeUtils.escapeSql(roleId) + "%'  ");
+		}
+		return findFirst(sql.toString(), majorId);
+	}
 }

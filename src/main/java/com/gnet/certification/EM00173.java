@@ -72,10 +72,37 @@ public class EM00173 extends BaseApi implements IApi{
 		Integer sort = paramsIntegerFilter(param.get("sort"));
 		BigDecimal indepentHours = paramsBigDecimalFilter("indepentHours");
 		Long typeId = paramsLongFilter(param.get("typeId"));
+		Integer courseType = paramsIntegerFilter(param.get("courseType"));
+		Integer courseScoreType = paramsIntegerFilter(param.get("courseScoreType"));
+
 		// 培养计划课程学期详情表
 		List<Long> planTermClassIds = paramsJSONArrayFilter(param.get("planTermClassIds"), Long.class);
 		List<Long> planTermExamIds = paramsJSONArrayFilter(param.get("planTermExamIds"), Long.class);
-		
+		//学时为空的赋值0
+		if (theoryHours == null) {
+			theoryHours=paramsBigDecimalFilter(0);
+		}
+		if (experimentHours == null) {
+			experimentHours=paramsBigDecimalFilter(0);
+		}
+		if (practiceHours == null) {
+			practiceHours=paramsBigDecimalFilter(0);
+		}
+		if(operateComputerHours == null){
+			operateComputerHours=paramsBigDecimalFilter(0);
+		}
+		if (weekHour == null) {
+			weekHour=paramsBigDecimalFilter(0);
+		}
+		if (exercisesHours==null){
+			exercisesHours=paramsBigDecimalFilter(0);
+		}
+		if (dicussHours==null){
+			dicussHours=paramsBigDecimalFilter(0);
+		}
+		if (extracurricularHours==null){
+			extracurricularHours=paramsBigDecimalFilter(0);
+		};
 		if (planTermClassIds.isEmpty()) {
 			return renderFAIL("0268", response, header);
 		}
@@ -162,6 +189,8 @@ public class EM00173 extends BaseApi implements IApi{
 		ccCourse.set("type", CcCourse.TYPE_THEORY);
 		ccCourse.set("indepent_hours", indepentHours);
 		ccCourse.set("type_id",typeId);
+		ccCourse.set("course_type",courseType);
+		ccCourse.set("course_score_type",courseScoreType);
 		if((orginalDirectioniId == null && directionId != null) || (orginalDirectioniId != null && !orginalDirectioniId.equals(directionId))){
 			ccCourse.set("direction_change_date", date);
 		}

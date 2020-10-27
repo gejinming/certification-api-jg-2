@@ -732,4 +732,13 @@ public class CcCourse extends DbModel<CcCourse> {
 
 	}
 
+	public List<CcCourse> findNameCourse(String name,Long planId){
+		ArrayList<Object> params = new ArrayList<>();
+		StringBuilder sql = new StringBuilder("select * from " + CcCourse.dao.tableName + " where name=? and is_del=0 and plan_id=?");
+		params.add(name);
+		params.add(planId);
+		return  find(sql.toString(),params.toArray());
+
+	}
+
 }

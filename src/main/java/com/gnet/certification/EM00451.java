@@ -59,6 +59,7 @@ public class EM00451 extends BaseApi implements IApi  {
 		map.put("content", temp.get("content"));
 		map.put("site", temp.get("site"));
 		map.put("remark", temp.get("remark"));
+		map.put("projectName",temp.get("project_name"));
 		
 		return renderSUC(map, response, header);
 	}

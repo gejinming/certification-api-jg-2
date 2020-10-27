@@ -38,6 +38,8 @@ public class EM00567 extends BaseApi implements IApi {
 		
 		//教学班编号
 	    Long educlassId = paramsLongFilter(param.get("educlassId"));
+	    //判断输入方式 3多批次题目录入，4多批次指标点直接录入
+		Integer inputType = paramsIntegerFilter(param.get("inputType"));
 		
 	    //开课课程成绩组成编号
 	    Long courseGradecomposeId = paramsLongFilter(param.get("courseGradecomposeId"));
@@ -62,24 +64,45 @@ public class EM00567 extends BaseApi implements IApi {
 		}
 		//返回内容过滤
 		List<Map<String, Object>> courseGradecomposeIndicationLists = Lists.newArrayList();
-		//如果batchId不为空则为查询批次的汇总信息
-		if (batchId !=null){
-			ArrayList<Long> batchIdList = new ArrayList<>();
-			batchIdList.add(batchId);
-			List<CcCourseGradecomposeDetailIndication> indictionScore = CcCourseGradecomposeDetailIndication.dao.getIndictionScore(batchIdList);
+		//如果batchId不为空且是多批次题目录入方式则为查询批次的汇总信息
+		if (batchId !=null && inputType==3){
+
+				ArrayList<Long> batchIdList = new ArrayList<>();
+				batchIdList.add(batchId);
+				List<CcCourseGradecomposeDetailIndication> indictionScore = CcCourseGradecomposeDetailIndication.dao.getIndictionScore(batchIdList);
+				//如果为空就直接返回
+				if(indictionScore.isEmpty()){
+					result.put("courseGradecomposeIndicationLists", indictionScore);
+					return renderSUC(result, response, header);
+				}
+
+				for(CcCourseGradecomposeDetailIndication temp : indictionScore){
+					Map<String, Object> courseGradecomposeIndication = Maps.newHashMap();
+					courseGradecomposeIndication.put("courseGradecomposeIndicationId", temp.getLong("indication_id"));
+					courseGradecomposeIndication.put("indicationSort", temp.getInt("indicationSort"));
+					courseGradecomposeIndication.put("indicationContent", temp.getStr("indicationContent"));
+					courseGradecomposeIndication.put("indicationId", temp.getLong("indication_id"));
+					courseGradecomposeIndication.put("maxScore", temp.getBigDecimal("score"));
+					courseGradecomposeIndicationLists.add(courseGradecomposeIndication);
+				}
+
+
+		}//多批次直接录入
+		else if (batchId !=null && inputType==4){
+			List<CcCourseGradecomposeBatchIndication> courseBatchGradecomposeId = CcCourseGradecomposeBatchIndication.dao.findByCourseBatchGradecomposeId(courseGradecomposeId,batchId);
 			//如果为空就直接返回
-			if(indictionScore.isEmpty()){
-				result.put("courseGradecomposeIndicationLists", indictionScore);
+			if(courseBatchGradecomposeId.isEmpty()){
+				result.put("courseGradecomposeIndicationLists", courseBatchGradecomposeId);
 				return renderSUC(result, response, header);
 			}
 
-			for(CcCourseGradecomposeDetailIndication temp : indictionScore){
+			for(CcCourseGradecomposeBatchIndication temp : courseBatchGradecomposeId){
 				Map<String, Object> courseGradecomposeIndication = Maps.newHashMap();
-				courseGradecomposeIndication.put("courseGradecomposeIndicationId", temp.getLong("indication_id"));
+				courseGradecomposeIndication.put("courseGradecomposeIndicationId", temp.getLong("courseGradecomposeIndicationId"));
 				courseGradecomposeIndication.put("indicationSort", temp.getInt("indicationSort"));
 				courseGradecomposeIndication.put("indicationContent", temp.getStr("indicationContent"));
-				courseGradecomposeIndication.put("indicationId", temp.getLong("indication_id"));
-				courseGradecomposeIndication.put("maxScore", temp.getBigDecimal("score"));
+				courseGradecomposeIndication.put("indicationId", temp.getLong("indicationId"));
+				courseGradecomposeIndication.put("maxScore", temp.getBigDecimal("maxScore"));
 				courseGradecomposeIndicationLists.add(courseGradecomposeIndication);
 			}
 		}else{
@@ -114,7 +137,8 @@ public class EM00567 extends BaseApi implements IApi {
 
 
 		//某个教学班在某一个开课课程成绩组成下的已经有成绩的学生
-		if (batchId !=null){
+		if (batchId !=null && inputType==3){
+			//多批次题目录入
 			List<CcCourseGradecomposeStudetail> ccCourseGradecomposeStudetails = CcCourseGradecomposeStudetail.dao.sumBatchStudetail(batchId, courseGradecomposeId, educlassId);
 			for (CcCourseGradecomposeStudetail ccScoreStuIndigrade:ccCourseGradecomposeStudetails){
 				String studentNo = ccScoreStuIndigrade.getStr("student_no");
@@ -140,7 +164,35 @@ public class EM00567 extends BaseApi implements IApi {
 				scoreMap.put(ccScoreStuIndigrade.getLong("gradecompose_indication_id"), scoreItem);
 
 			}
-		}else{
+			//多批次指标点直接录入
+		}else if (batchId !=null && inputType==4){
+			List<CcScoreStuIndigradeBatch> ccScoreStuIndigrades = CcScoreStuIndigradeBatch.dao.findDetailByClassIdAndCourseGradecomposeId(educlassId, courseGradecomposeId,batchId);
+			for (CcScoreStuIndigradeBatch ccScoreStuIndigrade : ccScoreStuIndigrades) {
+				String studentNo = ccScoreStuIndigrade.getStr("student_no");
+				Map<String, Object> studentInfo = null;
+				if (studentInScoreMap.get(studentNo) == null) {
+					studentInfo = Maps.newHashMap();
+					// 学生基本信息
+					studentInfo.put("id", ccScoreStuIndigrade.getLong("student_id"));
+					studentInfo.put("studentNo", studentNo);
+					studentInfo.put("studentName", ccScoreStuIndigrade.getStr("student_name"));
+					// 学生成绩项保存
+					studentInfo.put("scoreMap", new HashMap<Long, BigDecimal>());
+					studentInScoreMap.put(studentNo, studentInfo);
+				} else{
+					studentInfo = (Map<String, Object>) studentInScoreMap.get(studentNo);
+				}
+				Map<Long, Object> scoreMap = (Map<Long, Object>) studentInfo.get("scoreMap");
+				Map<String, Object> scoreItem = Maps.newHashMap();
+				scoreItem.put("grade", ccScoreStuIndigrade.getBigDecimal("grade"));
+				scoreItem.put("type", ccScoreStuIndigrade.getInt("type"));
+				scoreItem.put("levelDetailId", ccScoreStuIndigrade.getLong("level_detail_id"));
+				scoreItem.put("scoreStuIndigradeId", ccScoreStuIndigrade.getLong("id"));
+				scoreMap.put(ccScoreStuIndigrade.getLong("gradecomposeIndicationId"), scoreItem);
+			}
+		}
+		else{
+			//单批次指标点直接录入
 			List<CcScoreStuIndigrade> ccScoreStuIndigrades = CcScoreStuIndigrade.dao.findDetailByClassIdAndCourseGradecomposeId(educlassId, courseGradecomposeId);
 			for (CcScoreStuIndigrade ccScoreStuIndigrade : ccScoreStuIndigrades) {
 				String studentNo = ccScoreStuIndigrade.getStr("student_no");

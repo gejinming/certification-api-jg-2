@@ -192,16 +192,25 @@ public class CcVersionCreateLog extends DbModel<CcVersionCreateLog> {
 	 * 步骤--开课课程成绩组成元素课程目标关联的分数范围备注
 	 */
 	public static final Integer STEP_SCORE_REMARK = 32;
+	/**
+	 * 步骤--课程分组
+	 */
+	public static final Integer STEP_COURSE_GROUPS= 19;
+	/**
+	 * 步骤--课程分级教学
+	 */
+	public static final Integer STEP_COURSE_TEACH_GROUPS= 20;
 
 	/**
 	 * 步骤--版本复制的时候总共有多少步
 	 */
-	public static final Integer COPY_STEP_ALL_NUM = 18;
+	public static final Integer COPY_STEP_ALL_NUM = 20;
 
 	/**
 	 * 步骤--版本创建不进行版本复制总共多少步
 	 */
 	public static final Integer STEP_ALL_NUM = 1;
+
 
 	/**
 	 * 通过majorId获取当前专业下的所有正在创建/未开始/操作失败/操作成功的versionLog（但现在的道理，应该只有一个！2016年8月17日20:00:50）

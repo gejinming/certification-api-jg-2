@@ -71,6 +71,9 @@ EM00172 extends BaseApi implements IApi{
 		Integer sort = paramsIntegerFilter(param.get("sort"));
 		BigDecimal indepentHours = paramsBigDecimalFilter("indepentHours");
 		Long typeId = paramsLongFilter(param.get("typeId"));
+
+		Integer courseType = paramsIntegerFilter(param.get("courseType"));
+		Integer courseScoreType = paramsIntegerFilter(param.get("courseScoreType"));
 		// 培养计划课程学期详情表
 		List<Long> planTermClassIds = paramsJSONArrayFilter(param.get("planTermClassIds"), Long.class);
 		List<Long> planTermExamIds = paramsJSONArrayFilter(param.get("planTermExamIds"), Long.class);
@@ -182,6 +185,8 @@ EM00172 extends BaseApi implements IApi{
 		ccCourse.set("indepent_hours", indepentHours);
 	    ccCourse.set("direction_change_date", date);
 	    ccCourse.set("type_id",typeId);
+	    ccCourse.set("course_type",courseType);
+		ccCourse.set("course_score_type",courseScoreType);
 		Boolean isSuccess = ccCourse.save();
 		
 		Map<String, Object> result = new HashMap<>();

@@ -77,6 +77,7 @@ public class EM00171 extends BaseApi implements IApi  {
 		}
 		
 		Map<String, Object> map = new HashMap<>();
+
 		map.put("id", temp.getLong("id"));
 		map.put("createDate", temp.getDate("create_date"));
 		map.put("modifyDate", temp.getDate("modify_date"));
@@ -124,6 +125,8 @@ public class EM00171 extends BaseApi implements IApi  {
 		map.put("planTermCourseClassList", ccPlanTermCourseClassList);
 		map.put("planTermCourseExamList", ccPlanTermCourseExamList);
 		map.put("typeId",temp.get("type_id"));
+		map.put("courseType",temp.get("course_type"));
+		map.put("courseScoreType",temp.get("course_score_type"));
 		
 		return renderSUC(map, response, header);
 	}

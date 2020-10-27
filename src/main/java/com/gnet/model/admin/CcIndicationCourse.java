@@ -2,6 +2,7 @@ package com.gnet.model.admin;
 
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.sun.tools.corba.se.idl.toJavaPortable.InterfaceGen;
@@ -203,13 +204,46 @@ public class CcIndicationCourse extends DbModel<CcIndicationCourse> {
 	 * @param versionId
 	 * @return
 	 */
-	public List<CcIndicationCourse> findByVersionId(Long versionId) {
-		StringBuilder sql = new StringBuilder("select cic.*, cc.direction_id direction_id, cc.course_group_id course_group_id from " + tableName + " cic ");
+	public List<CcIndicationCourse> findByVersionId(Long versionId,Integer state) {
+		ArrayList<Object> params = new ArrayList<>();
+		StringBuilder sql = new StringBuilder("select distinct cic.*, cc.direction_id direction_id, cc.course_group_id course_group_id,cgtm.teach_group_id from " + tableName + " cic ");
 		sql.append("left join cc_course cc on cc.id = cic.course_id ");
-		sql.append("where cc.plan_id = ? and cic.is_del = ? ");
+		sql.append("left join cc_course_group_mange_group cgmg on cgmg.course_id=cic.course_id  ");
+		sql.append("left join cc_course_group_teach_mange cgtm on cgtm.group_id=cgmg.mange_group_id ");
+
+		sql.append("where cc.plan_id = ? and cic.is_del = ?  ");
+		params.add(versionId);
+		params.add(DEL_NO);
+		if (state ==null){
+			//TODO 2020/09/9 Gjm 先剔除分级教学的课程
+			sql.append("and cgtm.teach_group_id is null ");
+		}
 		sql.append("order by cc.direction_id asc");
-		return find(sql.toString(), versionId, DEL_NO);
+		return find(sql.toString(),params.toArray());
 	}
+
+	/**
+	 * 获取版本下的分级教学的课程指标点信息
+	 *
+	 * @param versionId
+	 * @return   gjm
+	 */
+	public List<CcIndicationCourse> findByFenjiCourseVersionId(Long versionId,Long graduateId) {
+		ArrayList<Object> params = new ArrayList<>();
+		StringBuilder sql = new StringBuilder("select distinct cc.name,indication_id from cc_indication_course cic ");
+		sql.append("inner join cc_course cc on cc.id = cic.course_id  and cc.is_del=0 ");
+		sql.append("inner join cc_indicator_point cip on cic.indication_id=cip.id and cip.is_del=0 ");
+		sql.append("inner join cc_graduate cg on cg.id=cip.graduate_id ");
+		sql.append("where cc.plan_id = ? and cic.is_del = 0   ");
+		params.add(versionId);
+		if (graduateId !=null){
+			sql.append("and cg.id =? ");
+			params.add(graduateId);
+		}
+		sql.append("order by cc.id  asc");
+		return find(sql.toString(),params.toArray());
+	}
+
 	
 	/**
 	 * 同一指标点不能关联同一门课程2次
@@ -520,5 +554,77 @@ public class CcIndicationCourse extends DbModel<CcIndicationCourse> {
 		exceptSql.append("order by cg.index_num, ci.index_num ");
 		
 		return find(exceptSql.toString(), params.toArray());
+	}
+	/*
+	 * @param versionId
+		 * @param indicationId
+		 * @param teacherGroupId
+	 * @return java.util.List<com.gnet.model.admin.CcIndicationCourse>
+	 * @author Gejm
+	 * @description: 统计分级教学的
+	 * @date 2020/9/9 18:28
+	 */
+	public List<CcIndicationCourse> findSumTeachGroupResult(Long versionId,Long indicationId,Long teacherGroupId,Integer state) {
+		ArrayList<Object> params = new ArrayList<>();
+		StringBuilder sql = new StringBuilder("select  cgtm.teach_group_id,cgtm.group_id,cic.indication_id,sum(crc.except_result) result from " + tableName + " cic ");
+		sql.append("left join cc_report_course crc on crc.indication_course_id=cic.id and crc.is_del=0 ");
+		sql.append("left join cc_course cc on cc.id = cic.course_id ");
+		sql.append("left join cc_course_group_mange_group cgmg on cgmg.course_id=cic.course_id  ");
+		sql.append("left join cc_course_group_teach_mange cgtm on cgtm.group_id=cgmg.mange_group_id ");
+
+		sql.append("where cc.plan_id = ? and cic.is_del = ?  ");
+		params.add(versionId);
+		params.add(DEL_NO);
+		if (indicationId !=null ){
+			sql.append("and cic.indication_id=? ");
+			params.add(indicationId);
+		}
+		if (state ==null){
+			//TODO 2020/09/9 Gjm 先剔除分级教学的课程
+			sql.append("and cgtm.teach_group_id is null ");
+		}else{
+			sql.append("and cgtm.teach_group_id=? ");
+			params.add(teacherGroupId);
+		}
+		sql.append("order by cc.direction_id asc");
+		return find(sql.toString(),params.toArray());
+	}
+	/*
+	 * @param versionId
+	 * @param indicationId
+	 * @param teacherGroupId
+	 * @return java.util.List<com.gnet.model.admin.CcIndicationCourse>
+	 * @author Gejm
+	 * @description:
+	 * @date 2020/9/9 18:32
+	 */
+	public List<CcIndicationCourse> sumTeachGroupResult(Long versionId,Long indicationId,Long teacherGroupId) {
+		ArrayList<Object> params = new ArrayList<>();
+		StringBuilder sql = new StringBuilder("select teach_group_id,min(result) teachMaxResult from ( ");
+		sql.append("select  cgtm.teach_group_id,cgtm.group_id,cic.indication_id,sum(crc.except_result) result  FROM cc_indication_course cic ");
+		sql.append("left join cc_report_course crc on crc.indication_course_id=cic.id and crc.is_del=0 ");
+		sql.append("left join cc_course cc on cc.id = cic.course_id ");
+		sql.append("left join cc_course_group_mange_group cgmg on cgmg.course_id=cic.course_id  ");
+		sql.append("left join cc_course_group_teach_mange cgtm on cgtm.group_id=cgmg.mange_group_id ");
+
+		sql.append("where cc.plan_id = ? and cic.is_del = ?  ");
+		params.add(versionId);
+		params.add(DEL_NO);
+		if (indicationId !=null ){
+			sql.append("and cic.indication_id=? ");
+			params.add(indicationId);
+		}
+		if (teacherGroupId ==null){
+			//TODO 2020/09/9 Gjm 先剔除分级教学的课程
+			sql.append("and cgtm.teach_group_id is not null ");
+		}else{
+			sql.append("and cgtm.teach_group_id=? ");
+			params.add(teacherGroupId);
+		}
+		sql.append("group by cgtm.teach_group_id,cgtm.group_id ");
+		sql.append("order by cc.direction_id asc ");
+		sql.append(") a ");
+		sql.append(" group by teach_group_id");
+		return find(sql.toString(),params.toArray());
 	}
 }

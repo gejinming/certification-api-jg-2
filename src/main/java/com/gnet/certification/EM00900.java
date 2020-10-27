@@ -27,7 +27,7 @@ public class EM00900 extends BaseApi implements IApi {
 	public Response excute(Request request, Response response, ResponseHeader header, String method) {
 		
 		
-		String path = PathKit.getRootClassPath() + File.separator + "excel" + File.separator + "graduateImportTemplate.xls";
+		String path = PathKit.getRootClassPath() + File.separator + "excel" + File.separator + "毕业要求指标点导入.xls";
 		
 		return renderFILE(new File(path), response, header);
 	}

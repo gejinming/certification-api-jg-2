@@ -44,7 +44,10 @@ public class EM00192 extends BaseApi implements IApi{
 		if (StrKit.isBlank(name)) {
 			return renderFAIL("0282", response, header);
 		}
-		
+		if (CcMajorDirection.dao.isExisted(name,planId,null)){
+			return renderFAIL("0284", response, header);
+
+		}
 		Date date = new Date();
 		
 		CcMajorDirection ccMajorDirection = new CcMajorDirection();

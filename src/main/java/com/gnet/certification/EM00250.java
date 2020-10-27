@@ -73,7 +73,7 @@ public class EM00250 extends BaseApi implements IApi {
 		
 
 		Map<String, Object> classesMap = Maps.newHashMap();
-		Page<CcClass> ccClassPage = CcClass.dao.page(pageable, name, majorIds, grade, majorId);
+		Page<CcClass> ccClassPage = CcClass.dao.page(pageable, name, majorIds, grade, majorId,null);
 		List<CcClass> ccClassList = ccClassPage.getList();
 		
 		// 判断是否分页

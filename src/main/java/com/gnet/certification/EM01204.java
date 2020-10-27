@@ -32,6 +32,7 @@ public class EM01204 extends BaseApi implements IApi {
         HashMap result = new HashMap();
         CcCourseGradecomposeBatch batch = CcCourseGradecomposeBatch.dao.findBatch(id);
         result.put("name",batch.get("name"));
+        result.put("remark",batch.get("remark"));
         result.put("id",id);
         return renderSUC(result, response, header);
 

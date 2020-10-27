@@ -76,4 +76,12 @@ public class CcCoursePropertySecondary extends DbModel<CcCoursePropertySecondary
 		}
 	}
 
+	public CcCoursePropertySecondary findCoursePropertySecondary(String name,Long planId){
+		List<Object> params = Lists.newArrayList();
+		StringBuilder sql = new StringBuilder("select * from " + CcCoursePropertySecondary.dao.tableName + " where property_name=? and plan_id=? and is_del=0 limit 1");
+		params.add(name);
+		params.add(planId);
+		return findFirst(sql.toString(),params.toArray());
+	}
+
 }

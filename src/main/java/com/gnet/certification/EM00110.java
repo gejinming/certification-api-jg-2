@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.gnet.model.admin.CcCourse;
 import org.springframework.stereotype.Service;
 
 import com.gnet.api.Request;
@@ -42,7 +43,7 @@ public class EM00110 extends BaseApi implements IApi {
 		//通过token获取专业编号
 		String token = request.getHeader().getToken();
 		Boolean isQuerySchoolTeacher = paramsBooleanFilter(params.get("isQuerySchoolTeacher"));
-
+		Long courseId = paramsLongFilter(params.get("courseId"));
 		Office departmentOffice = null;
 		if(isQuerySchoolTeacher != null && isQuerySchoolTeacher){
 			departmentOffice = UserCacheKit.getSchool(token);
@@ -55,7 +56,17 @@ public class EM00110 extends BaseApi implements IApi {
 		Integer pageSize = paramsIntegerFilter(params.get("pageSize"));
 		String orderProperty = paramsStringFilter(params.get("orderProperty"));
 		String orderDirection = paramsStringFilter(params.get("orderDirection"));
-		
+		//教务员排课的时候筛选为专业负责人
+		if (courseId != null){
+			CcCourse byCourseId = CcCourse.dao.findByCourseId(courseId);
+			//如果是毕业设计和工程实习类型的，则上课教师只能是专业负责人
+			if (byCourseId !=null){
+				Integer courseType = byCourseId.getInt("course_type");
+				if (courseType !=null && (courseType ==2 || courseType ==3) ){
+					roleId="162168";
+				}
+			}
+		}
 		// 查询字段
 		Long majorId = paramsLongFilter(params.get("majorId"));
 		if(params.containsKey("majorId") && majorId == null){

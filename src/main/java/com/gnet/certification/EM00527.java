@@ -57,9 +57,17 @@ public class EM00527 extends BaseApi implements IApi{
 		courseGradecompose.set("modify_date", date);
 		//TODO 2020/07/06增加多批次题目录入
 		if(inputType == 1){
+			//单批次直接录入
+			courseGradecompose.set("input_score_type", CcCourseGradecompose.DIRECT_INPUT_SCORE);
+		}else if (inputType == 2){
+			//单批次题目录入
 			courseGradecompose.set("input_score_type", CcCourseGradecompose.SUMMARY_INPUT_SCORE);
-		}else {
+		}else if (inputType == 3){
+			//多批次题目录入
 			courseGradecompose.set("input_score_type", CcCourseGradecompose.SUMMARY_MANYINPUT_SCORE);
+		}else{
+			//TODO 2020/08/11增加多批次直接录入
+			courseGradecompose.set("input_score_type", CcCourseGradecompose.DIRECT_MANYINPUT_SCORE);
 		}
 
 		courseGradecompose.set("other_score", null);

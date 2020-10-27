@@ -50,6 +50,7 @@ public class CcCourseGradecompose extends DbModel<CcCourseGradecompose> {
 	 * @param teacherCourseId
 	 * @return
 	 */
+
 	public Page<CcCourseGradecompose> page(Pageable pageable, Long teacherCourseId) {
 		List<Object> params = Lists.newArrayList();
 		String selectString = "select ccg.*, cg.name ";

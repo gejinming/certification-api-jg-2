@@ -345,8 +345,8 @@ public class EM00552 extends BaseApi implements IApi {
 			indicatorPointInfo.put("graduateIndexNum", tempIndicatorPoint.getInt("graduateIndexNum"));
 			indicatorPointInfo.put("indicatorPointContent", tempIndicatorPoint.getStr("content"));
 			indicatorPointInfo.put("indicatorPointRemark", tempIndicatorPoint.getStr("remark"));
-			indicatorPointInfo.put("indicatorPointWeight", tempIndicatorPoint.getBigDecimal("indicationWeight"));
-			indicatorPointInfo.put("indicatorPointValue", indicatorPointValueMap.get(keyIndicatorPointId));
+			indicatorPointInfo.put("indicatorPointWeight", PriceUtils.currency(tempIndicatorPoint.getBigDecimal("indicationWeight")));
+			indicatorPointInfo.put("indicatorPointValue", PriceUtils.currency(indicatorPointValueMap.get(keyIndicatorPointId)));
 			indicatorPointInfo.put("indicationInfo", indicationInfoList);
 			List<Long> thisIndicationIdList = indicatorIdAndIndicationIdListMap.get(keyIndicatorPointId);
 			// 遍历课程目标
@@ -364,7 +364,7 @@ public class EM00552 extends BaseApi implements IApi {
 					indicationInfo.put("indicationId", indicationId);
 					indicationInfo.put("indicationIndexNum", sort);
 					indicationInfo.put("indicationExpectedValue", expectedValue);
-					indicationInfo.put("indicationAchieveValue", achieveValue == null ? achieveValue : achieveValue.divide(expectedValue,5, RoundingMode.HALF_UP));
+					indicationInfo.put("indicationAchieveValue", achieveValue == null ? achieveValue : achieveValue.divide(expectedValue,2, RoundingMode.HALF_UP));
 					indicationInfo.put("indicationContent", content);
 					indicationInfo.put("gradecomposeList", gradecomposeList);
 					indicationInfoList.add(indicationInfo);
@@ -383,8 +383,8 @@ public class EM00552 extends BaseApi implements IApi {
 							Map<String, Object> gradecomposeDetail = Maps.newHashMap();
 							gradecomposeDetail.put("gradecomposeIndicationId", gradecomposeIndicationId);
 							gradecomposeDetail.put("gradecomposeName", gradecomposeName);
-							gradecomposeDetail.put("gradecomposeAverage", avgScore);
-							gradecomposeDetail.put("gradecomposeWeight", weight);
+							gradecomposeDetail.put("gradecomposeAverage", PriceUtils.currency(avgScore));
+							gradecomposeDetail.put("gradecomposeWeight", PriceUtils.currency(weight));
 							gradecomposeDetail.put("maxScore", maxScore);
 							gradecomposeList.add(gradecomposeDetail);
 						}
@@ -545,7 +545,7 @@ public class EM00552 extends BaseApi implements IApi {
 			indicatorPointInfo.put("indicatorPointContent", tempIndicatorPoint.getStr("content"));
 			indicatorPointInfo.put("indicatorPointRemark", tempIndicatorPoint.getStr("remark"));
 			indicatorPointInfo.put("indicatorPointWeight", tempIndicatorPoint.getBigDecimal("indicationWeight"));
-			indicatorPointInfo.put("indicatorPointValue", indicatorPointExceptValueMap.get(keyIndicatorPointId));
+			indicatorPointInfo.put("indicatorPointValue", PriceUtils.currency(indicatorPointExceptValueMap.get(keyIndicatorPointId)));
 			indicatorPointInfo.put("indicationInfo", indicationInfoList);
 			List<Long> thisIndicationIdList = indicatorIdAndIndicationIdListMap.get(keyIndicatorPointId);
 			// 遍历课程目标
@@ -563,7 +563,7 @@ public class EM00552 extends BaseApi implements IApi {
 					indicationInfo.put("indicationId", indicationId);
 					indicationInfo.put("indicationIndexNum", sort);
 					indicationInfo.put("indicationExpectedValue", expectedValue);
-					indicationInfo.put("indicationAchieveValue", exceptAchieveValue == null ? exceptAchieveValue : exceptAchieveValue.divide(expectedValue,5, RoundingMode.HALF_UP));
+					indicationInfo.put("indicationAchieveValue", exceptAchieveValue == null ? exceptAchieveValue : exceptAchieveValue.divide(expectedValue,2, RoundingMode.HALF_UP));
 					indicationInfo.put("indicationContent", content);
 					indicationInfo.put("gradecomposeList", gradecomposeList);
 					indicationInfoList.add(indicationInfo);
@@ -582,9 +582,9 @@ public class EM00552 extends BaseApi implements IApi {
 							Map<String, Object> gradecomposeDetail = Maps.newHashMap();
 							gradecomposeDetail.put("gradecomposeIndicationId", gradecomposeIndicationId);
 							gradecomposeDetail.put("gradecomposeName", gradecomposeName);
-							gradecomposeDetail.put("gradecomposeAverage", exceptAvgScore);
-							gradecomposeDetail.put("gradecomposeWeight", weight);
-							gradecomposeDetail.put("maxScore", maxScore);
+							gradecomposeDetail.put("gradecomposeAverage", PriceUtils.currency(exceptAvgScore));
+							gradecomposeDetail.put("gradecomposeWeight", PriceUtils.currency(weight));
+							gradecomposeDetail.put("maxScore", PriceUtils.currency(maxScore));
 							gradecomposeList.add(gradecomposeDetail);
 						}
 					}

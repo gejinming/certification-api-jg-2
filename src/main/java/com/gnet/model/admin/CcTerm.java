@@ -100,5 +100,21 @@ public class CcTerm extends DbModel<CcTerm> {
 		return Db.queryLong(sb.toString(), params.toArray()) > 0;
 	}
 
+	public List<CcTerm> findTerm(Integer startYear, Integer endYear, Integer term, Integer termType, Long schoolId) {
+		List<Object> params = Lists.newArrayList();
+		StringBuilder sb = new StringBuilder("select * from " + tableName + " " );
+		sb.append(" where start_year = ? and end_year = ? and term = ? and term_type = ? and school_id = ? and is_del = ? ");
+
+		params.add(startYear);
+		params.add(endYear);
+		params.add(term);
+		params.add(termType);
+		params.add(schoolId);
+		params.add(Boolean.FALSE);
+
+
+
+		return find(sb.toString(), params.toArray());
+	}
 
 }

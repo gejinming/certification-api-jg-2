@@ -2,6 +2,7 @@ package com.gnet.model.admin;
 
 import com.gnet.model.DbModel;
 import com.gnet.plugin.tablebind.TableBind;
+import com.gnet.utils.CollectionKit;
 import com.google.common.collect.Lists;
 
 import java.util.List;
@@ -24,7 +25,9 @@ public class CcCourseGroupMangeGroup extends DbModel<CcCourseGroupMangeGroup> {
 
 
 
-	/*public List<CcCourse> findCourse(){
+	public List<CcCourseGroupMangeGroup> findGroupMangeCourse(List<Long> groupIds){
+		StringBuilder sql = new StringBuilder("select * from cc_course_group_mange_group where mange_group_id in (" + CollectionKit.convert(groupIds, ",") + ") ");
 
-	}*/
+		return find(sql.toString());
+	}
 }

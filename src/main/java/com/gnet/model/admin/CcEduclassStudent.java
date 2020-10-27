@@ -468,4 +468,21 @@ public class CcEduclassStudent extends DbModel<CcEduclassStudent> {
 	public List<CcEduclassStudent> countStudentNum(List<Long> ccEduclassIdList) {
 		return countStudentNum(ccEduclassIdList, null);
 	}
+	/*
+	 * @param courseId
+	 * @return java.util.List<com.gnet.model.admin.CcEduclassStudent>
+	 * @author Gejm
+	 * @description: 根据课程统计每个教学班的学生数量
+	 * @date 2020/9/7 15:48
+	 */
+	public List<CcEduclassStudent> countStudentNums(Long courseId){
+		List<Object> params = new ArrayList<>();
+		StringBuilder sql = new StringBuilder("select b.id,b.educlass_name,count(a.student_id) as studentNum from cc_educlass_student a ");
+		sql.append("left join cc_educlass b on a.class_id=b.id and b.is_del=0 ");
+		sql.append("left join cc_teacher_course c on c.id=b.teacher_course_id ");
+		sql.append("where c.course_id=? and a.is_del=0 ");
+		params.add(courseId);
+		sql.append("group by b.id ");
+		return find(sql.toString(), params.toArray());
+	}
 }

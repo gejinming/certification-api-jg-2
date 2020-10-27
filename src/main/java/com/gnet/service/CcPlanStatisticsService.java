@@ -87,6 +87,11 @@ public class CcPlanStatisticsService {
 		// 一个有方向课的区域一次只加一个方向的课程以及无方向的课程
 		Map<String, Long> directionMap = Maps.newHashMap();
 		for (CcCourse ccCourse : ccCourses) {
+			Long hierarchy_id = ccCourse.getLong("hierarchy_id");
+			if(hierarchy_id!=null && hierarchy_id.equals(704096l)){
+				System.out.println(hierarchy_id);
+			}
+
 			Long courseGroupId = ccCourse.getLong("course_group_id");
 			// 判断是否为同一课程组
 			boolean isSameGroup = courseGroupId == null || (courseGroupId != null && !courseGroupId.equals(prevCourseGroupId));
@@ -162,6 +167,7 @@ public class CcPlanStatisticsService {
 					
 					// 次要课程层次分区获取
 					if (hierarchySecondaryId != null) {
+						String parentKey = keyBuilder.toString();
 						String key = keyBuilder.append(",").append(hierarchySecondaryId.toString()).append(",").toString();
 						
 						if (zoneMap.get(key) == null) {
@@ -203,6 +209,15 @@ public class CcPlanStatisticsService {
 							
 							parentId = ccPlanCourseZone.getLong("id");
 							zoneTermMap.put(key, new HashMap<Long, CcPlanCourseZoneTerm>());
+							// 将该层加入到它的父层中
+							if (zoneParentMap.get(parentKey) == null) {
+								List<CcPlanCourseZone> childCcPlanCourseZones = Lists.newArrayList();
+								childCcPlanCourseZones.add(ccPlanCourseZone);
+								zoneParentMap.put(parentKey, childCcPlanCourseZones);
+								zoneParentMapKeys.add(parentKey);
+							} else {
+								zoneParentMap.get(parentKey).add(ccPlanCourseZone);
+							}
 						} else {
 							parentId = zoneMap.get(key).getLong("id");
 						}
@@ -475,6 +490,9 @@ public class CcPlanStatisticsService {
 				// 增加分区学期信息
 				String key = keyBuilder.toString();
 				Long directionId = ccCourse.getLong("direction_id");
+				if (key.equals(",704096,")){
+					logger.info("sss");
+				}
 				CcPlanCourseZone ccPlanCourseZone = zoneMap.get(key);
 				// 无课程组或有课程组但和上一课程组不同时，并且无方向或是在同一方向上进行合计
 				if (isSameGroup && (directionMap.get(key) == null || directionMap.get(key).equals(directionId))) {

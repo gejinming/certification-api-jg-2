@@ -8,6 +8,7 @@ import com.gnet.api.service.IApi;
 import com.gnet.model.admin.CcCourseGradeComposeDetail;
 import com.gnet.model.admin.CcCourseGradecomposeBatch;
 import com.gnet.model.admin.CcCourseGradecomposeStudetail;
+import com.gnet.model.admin.CcScoreStuIndigradeBatch;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,8 +29,11 @@ public class EM01203 extends BaseApi implements IApi {
         Map<String, Object> param = request.getData();
         Long id = paramsLongFilter(param.get("id"));
         String name = paramsStringFilter(param.get("name"));
+        String remark = paramsStringFilter(param.get("remark"));
         Map<String, Object> result = new HashMap();
         Integer delState = paramsIntegerFilter(param.get("delState"));
+        //多批次的输入方式2中，3是多批次题目录入，4多批次指标点直接录入
+        Integer inputType = paramsIntegerFilter(param.get("inputType"));
         if (id == null){
             return renderFAIL("1009", response, header);
         }
@@ -45,30 +49,41 @@ public class EM01203 extends BaseApi implements IApi {
 
                 ccCourseGradecomposeBatch.set("id", id);
                 ccCourseGradecomposeBatch.set("name", name);
+                ccCourseGradecomposeBatch.set("remark", remark);
                 ccCourseGradecomposeBatch.set("modify_date",date);
                 ccCourseGradecomposeBatches.add(ccCourseGradecomposeBatch);
-                 batchUpdate = CcCourseGradecomposeBatch.dao.batchUpdate(ccCourseGradecomposeBatches, "modify_date,name");
+                 batchUpdate = CcCourseGradecomposeBatch.dao.batchUpdate(ccCourseGradecomposeBatches, "modify_date,name,remark");
             }
         }else {
-            List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.topicList(null, id);
-            //判断该批次是否有题目
-            if (ccCourseGradeComposeDetails.size()!=0){
-                //判断是否存在有题目已经录入成绩
-                List<CcCourseGradecomposeStudetail> existScore = CcCourseGradecomposeStudetail.dao.isExistScore(id);
-                if (existScore.size() !=0){
-                    return renderFAIL("2558", response, header);
-                }else {
-                    //删除题目
-                   for (CcCourseGradeComposeDetail temp:ccCourseGradeComposeDetails){
-                       temp.set("is_del",true);
-                   }
-                    boolean batchUpdate1 = CcCourseGradeComposeDetail.dao.batchUpdate(ccCourseGradeComposeDetails, "modify_date,is_del");
-                    if (!batchUpdate1){
-                        result.put("isSuccess", Boolean.FALSE);
-                        return renderSUC(result, response, header);
+            //多批次题目录入删除
+            if (inputType==3){
+                List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.topicList(null, id);
+                //判断该批次是否有题目
+                if (ccCourseGradeComposeDetails.size()!=0){
+                    //判断是否存在有题目已经录入成绩
+                    List<CcCourseGradecomposeStudetail> existScore = CcCourseGradecomposeStudetail.dao.isExistScore(id);
+                    if (existScore.size() !=0){
+                        return renderFAIL("2558", response, header);
+                    }else {
+                        //删除题目
+                        for (CcCourseGradeComposeDetail temp:ccCourseGradeComposeDetails){
+                            temp.set("is_del",true);
+                        }
+                        boolean batchUpdate1 = CcCourseGradeComposeDetail.dao.batchUpdate(ccCourseGradeComposeDetails, "modify_date,is_del");
+                        if (!batchUpdate1){
+                            result.put("isSuccess", Boolean.FALSE);
+                            return renderSUC(result, response, header);
+                        }
                     }
                 }
+            }else{
+                List<CcScoreStuIndigradeBatch> batchScoreList = CcScoreStuIndigradeBatch.dao.findBatchScoreList(null, id);
+                //判断是否已有成绩录入
+                if (batchScoreList.size() != 0){
+                    return renderFAIL("2558", response, header);
+                }
             }
+
 
             ccCourseGradecomposeBatch.set("id", id);
             ccCourseGradecomposeBatch.set("is_del", Boolean.TRUE);

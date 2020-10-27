@@ -58,7 +58,7 @@ public class CcClass extends DbModel<CcClass> {
 	 * 
 	 * @return
 	 */
-	public Page<CcClass> page(Pageable pageable, String name, Long[] majorIds, Integer grade, Long majorId) {
+	public Page<CcClass> page(Pageable pageable, String name, Long[] majorIds, Integer grade, Long majorId,Integer type) {
 		
 		StringBuilder exceptSql = new StringBuilder(" from " + CcClass.dao.tableName + " cc ");
 		exceptSql.append(" left join " + Office.dao.tableName + " office on office.id = cc.id ");
@@ -74,8 +74,12 @@ public class CcClass extends DbModel<CcClass> {
 		if (!StrKit.isBlank(name)) {
 			exceptSql.append("and office.name like '" + StringEscapeUtils.escapeSql(name) + "%' ");
 		}
-		if(grade != null){
+		if(grade != null && type==null){
 			exceptSql.append("and cc.grade = ? ");
+			params.add(grade);
+		}
+		if (grade != null && type !=null ){
+			exceptSql.append("and cc.grade != ? ");
 			params.add(grade);
 		}
 

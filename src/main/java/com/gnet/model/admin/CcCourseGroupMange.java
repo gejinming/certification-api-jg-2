@@ -16,10 +16,10 @@ import java.util.List;
 /**
  * 
  * @type model
- * @table cc_course_group
- * @author SY
+ * @table cc_course_group_mange
+ * @author GJM
  * @version 1.0
- * @date 2016年07月14日 11:10:53
+ * @date 2020年07月14日 11:10:53
  *
  */
 @TableBind(tableName = "cc_course_group_mange")

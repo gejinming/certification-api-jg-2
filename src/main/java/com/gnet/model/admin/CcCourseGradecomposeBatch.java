@@ -5,6 +5,7 @@ import com.gnet.pager.Pageable;
 import com.gnet.plugin.tablebind.TableBind;
 import com.google.common.collect.Lists;
 import com.jfinal.kit.StrKit;
+import com.jfinal.plugin.activerecord.Db;
 import com.jfinal.plugin.activerecord.Page;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -64,6 +65,8 @@ public class CcCourseGradecomposeBatch extends DbModel<CcCourseGradecomposeBatch
 		params.add(id);
 		return findFirst(sql.toString(), params.toArray());
 	}
+
+
 
 
 }

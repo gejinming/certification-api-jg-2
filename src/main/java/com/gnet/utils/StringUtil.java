@@ -113,4 +113,9 @@ public class StringUtil {
         Matcher m= Pattern.compile(regex).matcher(str);
         return m.matches();
     }
+    //判断是否是数字类型
+    public static boolean isInteger(String str) {
+        Pattern pattern = Pattern.compile("^[-\\+]?[\\d]*$");
+        return pattern.matcher(str).matches();
+    }
 }

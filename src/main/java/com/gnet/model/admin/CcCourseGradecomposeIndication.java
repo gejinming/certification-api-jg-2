@@ -636,6 +636,57 @@ public class CcCourseGradecomposeIndication extends DbModel<CcCourseGradecompose
         param.add(DEL_NO);
         return find(sql.toString(), param.toArray());
     }
+    /*
+     * @param teacherCourseId
+     * @return java.util.List<com.gnet.model.admin.CcCourseGradecomposeIndication>
+     * @author Gejm
+     * @description: 查询期末成绩各个课程目标的的总分
+     * @date 2020/8/17 15:55
+     */
+	public List<CcCourseGradecomposeIndication> findFinalIndictionScore(Long teacherCourseId) {
+		StringBuilder sql = new StringBuilder("select ccgci.*, ci.id indicationId,ci.content, ci.sort, cgc.name gradecomposeName from " + tableName + " ccgci ");
+		sql.append("inner join cc_course_gradecompose ccg on ccg.id = ccgci.course_gradecompose_id ");
+		sql.append("inner join " + CcIndication.dao.tableName + " ci on ci.id = ccgci.indication_id ");
+		sql.append("inner join " + CcGradecompose.dao.tableName + " cgc on cgc.id = ccg.gradecompose_id ");
+		sql.append("where  ccg.teacher_course_id = ? and ccgci.is_del = ? and ci.is_del = ? and cgc.is_del = ? and cgc.name='期末成绩' ");
 
+		sql.append("order by cgc.id, ccg.sort, ci.sort ");
+		return find(sql.toString(), teacherCourseId, DEL_NO, DEL_NO, DEL_NO);
+	}
+	/*
+	 * @param courseGradeComposeId
+		 * @param indicationId
+	 * @return java.util.List<com.gnet.model.admin.CcCourseGradecomposeIndication>
+	 * @author Gejm
+	 * @description: 查询课程目标权重满分
+	 * @date 2020/8/27 15:34
+	 */
+	public List<CcCourseGradecomposeIndication> findGradecomposeIndication(Long courseGradeComposeId,Long indicationId){
+		StringBuilder sql = new StringBuilder(" select * from cc_course_gradecompose_indication ");
+		sql.append("where is_del=? and course_gradecompose_id=? and indication_id=? ");
+		return find(sql.toString(), DEL_NO,courseGradeComposeId,indicationId);
+	}
+	/*
+	 * @param edClassId
+		 * @param indicationId
+		 * @param gradeComposeId
+	 * @return com.gnet.model.admin.CcCourseGradecomposeIndication
+	 * @author Gejm
+	 * @description: 根据教学班id和课程目标id、成绩组成id，获取权重和满分
+	 * @date 2020/9/7 17:23
+	 */
+	public CcCourseGradecomposeIndication findGradecomposeMaxscoreAndWeight(Long edClassId,Long indicationId,Long gradeComposeId){
+		ArrayList<Object> params = new ArrayList<>();
+		StringBuilder sql = new StringBuilder("select cgi.*  from cc_course_gradecompose_indication cgi ");
+		sql.append("left join cc_course_gradecompose ccg on cgi.course_gradecompose_id=ccg.id and ccg.is_del=0 ");
+		sql.append("left join cc_teacher_course ctc on ctc.id=ccg.teacher_course_id and ctc.is_del=0 ");
+		sql.append("left join cc_educlass ce on ce.teacher_course_id=ctc.id and ce.is_del=0 ");
+		sql.append("where ce.id=? and cgi.is_del=0 and cgi.indication_id=? and ccg.gradecompose_id=? ");
+		params.add(edClassId);
+		params.add(indicationId);
+		params.add(gradeComposeId);
 
+		return findFirst(sql.toString(),params.toArray());
+
+	}
 }

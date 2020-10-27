@@ -35,12 +35,14 @@ public class CcEduclass extends DbModel<CcEduclass> {
 	 * @return
 	 */
 	public CcEduclass findEduclassById(Long educlassId) {
-		StringBuilder exceptSql = new StringBuilder("select cv.id versionId, cv.major_id majorId, ce.*, count(ces.id) studentNum, cc.name courseName, ct.name teacherName, cc.code courseCode, cc.id courseId, ctc.result_type, ctc.grade grade from " + CcEduclass.dao.tableName + " ce ");
+		StringBuilder exceptSql = new StringBuilder("select ctc.id teacherCourseId,cv.id versionId, cv.major_id majorId, ce.*, count(ces.id) studentNum,cc.id courseId, cc.name courseName, ct.name teacherName,ct.major_id, cc.code courseCode, cc.id courseId, ctc.result_type, ctc.grade grade ," +
+				"cc.credit, cc.all_hours,ctm.start_year,ctm.end_year,ctm.term,ctm.term_type,cc.team_leader from " + CcEduclass.dao.tableName + " ce ");
 		exceptSql.append("left join " + CcTeacherCourse.dao.tableName + " ctc on ctc.id = ce.teacher_course_id ");
 		exceptSql.append("left join " + CcTeacher.dao.tableName + " ct on ct.id = ctc.teacher_id ");
 		exceptSql.append("left join " + CcCourse.dao.tableName + " cc on cc.id = ctc.course_id ");
-		exceptSql.append("left join " + CcEduclassStudent.dao.tableName + " ces on ces.class_id = ce.id ");
+		exceptSql.append("left join " + CcEduclassStudent.dao.tableName + " ces on ces.class_id = ce.id and ces.is_del=0 ");
 		exceptSql.append("left join " + CcVersion.dao.tableName + " cv on cv.id = cc.plan_id ");
+		exceptSql.append("LEFT JOIN cc_term ctm ON ctm.id = ctc.term_id ");
 		
 		List<Object> params = Lists.newArrayList();
 		
@@ -313,4 +315,20 @@ public class CcEduclass extends DbModel<CcEduclass> {
 		sql.append("group by ctc.id  ");
 		return find(sql.toString(), param.toArray());
 	}
+
+	public CcEduclass findEduclassCourse(Long edclassId){
+		List<Object> param = Lists.newArrayList();
+		StringBuilder sql = new StringBuilder("select ce.teacher_course_id,ce.educlass_name,cc.name courseName,cc.code,cc.credit,cc.all_hours,ct.name teacherName,");
+		sql.append("count(ces.student_id) studentNum,cte.start_year,cte.end_year,cte.term,cc.plan_id,cc.id courseId  ");
+		sql.append("from cc_educlass ce ");
+		sql.append("left join cc_teacher_course ctc on ce.teacher_course_id=ctc.id and ctc.is_del=0 ");
+		sql.append("left join cc_course cc on cc.id=ctc.course_id and cc.is_del=0 ");
+		sql.append("left join cc_teacher ct on ct.id=ctc.teacher_id and ct.is_del=0 ");
+		sql.append("left join cc_educlass_student ces on ces.class_id=ce.id and ces.is_del=0 ");
+		sql.append("left join cc_term cte on cte.id=ctc.term_id and cte.is_del=0 ");
+		sql.append("where ce.id=? and ce.is_del=0 ");
+		param.add(edclassId);
+		return  findFirst(sql.toString(),param.toArray());
+	}
+
 }

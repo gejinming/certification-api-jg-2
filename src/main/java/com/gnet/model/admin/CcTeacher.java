@@ -205,6 +205,7 @@ public class CcTeacher extends DbModel<CcTeacher> {
 		if (StrKit.notBlank(department)) {
 			exceptSql.append("and su.department like '" + org.apache.commons.lang.StringEscapeUtils.escapeSql(department) + "%' ");
 		}
+
 		
 		if (StrKit.notBlank(pageable.getOrderProperty())) {
 			exceptSql.append("order by " + pageable.getOrderProperty() + " " + pageable.getOrderDirection());
@@ -303,7 +304,7 @@ public class CcTeacher extends DbModel<CcTeacher> {
 	 */
 	public CcTeacher findAllById(Long teacherId) {
 		List<Object> params = Lists.newArrayList();
-		StringBuilder sb = new StringBuilder("select ct.*, su.loginName , su.type, su.department, su.login_date, so.name as department_name, sur.roles roles, major.name major_name, institute.name institute_name, school.name schoolName from " + tableName + " ct ");
+		StringBuilder sb = new StringBuilder("select ct.*, su.loginName , su.type, su.department, su.login_date, so.name as department_name, sur.roles roles, major.name major_name, institute.name institute_name, school.name schoolName,school.id schoolId from " + tableName + " ct ");
 		sb.append("left join " +  User.dao.tableName + " su on su.id = ct.id ");
 		sb.append("left join " +  Office.dao.tableName + " so on so.id = su.department ");
 		sb.append("left join " +  UserRole.dao.tableName + " sur on sur.user_id = su.id ");
@@ -708,6 +709,11 @@ public class CcTeacher extends DbModel<CcTeacher> {
 	 */
 	public boolean isExistedTeacherUnderMajorById(Long teacherId, Long majorId) {
 		return Db.queryLong("select count(1) from " + tableName + " where id = ? and major_id = ? and is_del = ?", teacherId, majorId, DEL_NO) > 0;
+	}
+
+	public List<CcTeacher> findNameTeacher(String name,Long schoolId){
+		StringBuilder sql = new StringBuilder("select * from " + tableName + " where name=? and is_del=0 and school_id=?");
+		return find(sql.toString(),name,schoolId);
 	}
 
 }

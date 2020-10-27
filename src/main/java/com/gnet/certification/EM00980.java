@@ -47,6 +47,14 @@ public class EM00980 extends BaseApi implements IApi {
 		//批次id
 		Long batchId = paramsLongFilter(param.get("batchId"));
 
+		String batchName="";
+		if (batchId !=null){
+			CcCourseGradecomposeBatch batch = CcCourseGradecomposeBatch.dao.findBatch(batchId);
+			if (batch !=null){
+				batchName=batch.getStr("name");
+			}
+		}
+
 		if(courseGradeComposeId == null){
 			return  renderFAIL("0475", response, header);
 		}
@@ -59,8 +67,14 @@ public class EM00980 extends BaseApi implements IApi {
 		if(ccTeacherCourse == null){
 			return renderFAIL("0501", response, header);
 		}
-
-		// 判断录入成绩类型是否是由题目明细计算获得,1:指标点成绩直接输入,2:由题目明细计算获得
+		//课程名称
+		String name = ccTeacherCourse.getStr("name");
+		//教学班名称
+		String educlassName = ccTeacherCourse.getStr("educlass_name");
+		CcCourseGradecompose gradecomposeDetail = CcCourseGradecompose.dao.findDetailById(courseGradeComposeId);
+		//成绩组成名称
+		String gradecomposeName = gradecomposeDetail.getStr("gradecomposeName");
+		// 判断录入成绩类型是否是由题目明细计算获得
         if(!CcCourseGradecompose.SUMMARY_INPUT_SCORE.equals(ccTeacherCourse.getInt("input_score_type")) && !CcCourseGradecompose.SUMMARY_MANYINPUT_SCORE.equals(ccTeacherCourse.getInt("input_score_type"))){
 			return renderFAIL("2102", response, header);
 		}
@@ -74,7 +88,7 @@ public class EM00980 extends BaseApi implements IApi {
 
 		//获取文件
 		String fileUrl = PathKit.getWebRootPath() + ConfigUtils.getStr("excel", "createPath");
-		String exportUrl = PathKit.getWebRootPath() + ConfigUtils.getStr("excel", "createPath") + "成绩导入模板.xls";
+		String exportUrl = PathKit.getWebRootPath() + ConfigUtils.getStr("excel", "createPath") + "学生题目成绩导入模板-" + name+"-"+gradecomposeName+"-"+batchName+"-"+educlassName + ".xls";;
 
 		try {
 			// 判断是否存在路径，不存在就创建

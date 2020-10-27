@@ -2,6 +2,7 @@ package com.gnet.model.admin;
 
 import com.gnet.model.DbModel;
 import com.gnet.plugin.tablebind.TableBind;
+import com.gnet.utils.CollectionKit;
 
 import java.util.List;
 
@@ -10,9 +11,9 @@ import java.util.List;
  * 
  * @type model
  * @table cc_course_group_teach_mange
- * @author SY
+ * @author GJM
  * @version 1.0
- * @date 2016年07月14日 11:10:53
+ * @date 2020年07月14日 11:10:53
  *
  */
 @TableBind(tableName = "cc_course_group_teach_mange")
@@ -35,5 +36,11 @@ public class CcCourseGroupTeachMange extends DbModel<CcCourseGroupTeachMange> {
 		sql.append(" and course_id="+courseId);
 		return find(sql.toString());
 
+	}
+
+	public List<CcCourseGroupTeachMange> finTeachGroups(List<Long> groupIds){
+		StringBuilder sql = new StringBuilder("select * from cc_course_group_teach_mange where teach_group_id in (" + CollectionKit.convert(groupIds, ",") + ") ");
+
+		return find(sql.toString());
 	}
 }

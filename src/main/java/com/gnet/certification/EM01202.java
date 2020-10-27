@@ -78,15 +78,20 @@ public class EM01202 extends BaseApi implements IApi {
             ArrayList<Long> batchIdList = new ArrayList<>();
             Map<String, Object> ccCourseGradeComposeBatch = new HashMap<>();
             Integer inputType = temp.getInt("input_type");
+            Long batchId = temp.getLong("id");
             ccCourseGradeComposeBatch.put("id", temp.get("id"));
             ccCourseGradeComposeBatch.put("name",temp.get("name"));
             ccCourseGradeComposeBatch.put("score",temp.get("score"));
             ccCourseGradeComposeBatch.put("inputType",temp.get("input_type"));
+            ccCourseGradeComposeBatch.put("remark",temp.get("remark"));
             batchIdList.add(temp.getLong("id"));
             //统计题目各个课程目标点成绩
             if (inputType==3){
                 List<CcCourseGradecomposeDetailIndication> indictionScore = CcCourseGradecomposeDetailIndication.dao.getIndictionScore(batchIdList);
                 ccCourseGradeComposeBatch.put("indictionScore",indictionScore);
+            }else{
+                List<CcCourseGradecomposeBatchIndication> batchIndicationList = CcCourseGradecomposeBatchIndication.dao.findBatchIndicationList(batchId, null);
+                ccCourseGradeComposeBatch.put("indictionScore",batchIndicationList);
             }
 
 

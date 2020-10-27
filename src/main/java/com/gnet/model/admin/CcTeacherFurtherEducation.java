@@ -1,5 +1,6 @@
 package com.gnet.model.admin;
 
+import java.util.Date;
 import java.util.List;
 
 import com.gnet.model.DbModel;
@@ -11,6 +12,8 @@ import com.jfinal.kit.StrKit;
 import com.jfinal.plugin.activerecord.Page;
 
 import org.apache.commons.lang3.StringUtils;
+
+import javax.xml.crypto.Data;
 
 
 /**
@@ -107,6 +110,78 @@ public class CcTeacherFurtherEducation extends DbModel<CcTeacherFurtherEducation
 		params.add(id);
 		
 		return findFirst(exceptSql.toString(), params.toArray());
+	}
+	/*
+	 * @param startData
+		 * @param endData
+		 * @param type
+		 * @param majorId
+	 * @return java.util.List<com.gnet.model.admin.CcTeacherFurtherEducation>
+	 * @author Gejm
+	 * @description: 根据开始与结束时间查询教师经历数据
+	 * @date 2020/8/21 11:06
+	 */
+	public List<CcTeacherFurtherEducation> finaAllTeacherFurther(Integer startData,Integer endData,Integer type,Long majorId){
+		List<Object> params = Lists.newArrayList();
+		StringBuilder sql = new StringBuilder("SELECT ctfe.*, ct.NAME teacher_name,so.NAME major_name FROM cc_teacher_further_education ctfe");
+		sql.append(" INNER JOIN cc_teacher ct ON ct.id = ctfe.teacher_id ");
+		sql.append("LEFT JOIN sys_office so ON so.id = ct.major_id ");
+		sql.append("LEFT JOIN sys_office institute ON institute.id = ct.institute_id ");
+		sql.append("WHERE ctfe.is_del = 0 AND ct.is_del = 0 ");
+		if (type != null){
+			sql.append("AND ctfe.education_type = ? ");
+			params.add(type);
+		}
+		if (startData !=null){
+			sql.append("and ctfe.start_time>=? ");
+			params.add(startData);
+		}
+		if (endData != null){
+			sql.append("and ctfe.end_time<=? ");
+			params.add(endData);
+		}
+		if (majorId != null){
+			sql.append("AND ct.major_id = ? ");
+			params.add(majorId);
+		}
+		sql.append("ORDER BY  ct.id");
+		return find(sql.toString(),params.toArray());
+
+
+	}
+	/*
+	 * @param startData
+	 * @param endData
+	 * @param type
+	 * @param majorId
+	 * @return java.util.List<com.gnet.model.admin.CcTeacherFurtherEducation>
+	 * @author Gejm
+	 * @description: 根据开始与结束时间查询教师经历的个数
+	 * @date 2020/8/21 11:06
+	 */
+	public List<CcTeacherFurtherEducation> finaAllTeacherFurtherNum(Integer startData, Integer endData, Integer type, Long majorId){
+		List<Object> params = Lists.newArrayList();
+		StringBuilder sql = new StringBuilder("SELECT  teacher_id,count(teacher_id) mageNum from cc_teacher_further_education  ctfe ");
+		sql.append("inner join cc_teacher ct ON ct.id = ctfe.teacher_id ");
+		sql.append("WHERE ctfe.is_del = 0 AND ct.is_del = 0 ");
+		if (type != null){
+			sql.append("AND ctfe.education_type = ? ");
+			params.add(type);
+		}
+		if (startData !=null){
+			sql.append("and ctfe.start_time>=? ");
+			params.add(startData);
+		}
+		if (endData != null){
+			sql.append("and ctfe.end_time<=? ");
+			params.add(endData);
+		}
+		if (majorId != null){
+			sql.append("AND ct.major_id = ? ");
+			params.add(majorId);
+		}
+		sql.append(" group by teacher_id ORDER BY ct.id ");
+		return find(sql.toString(),params.toArray());
 	}
 
 }
