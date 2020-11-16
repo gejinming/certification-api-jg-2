@@ -118,7 +118,7 @@ public class CcArrangeCourseService {
                         continue;
                     }
                     if (c.getColumnIndex()==3){
-                        if (!returnStr.equals("教师名称")){
+                        if (!returnStr.equals("教师工号")){
                             return Result.error("错误：导入模板有问题，请重新下载");
                         }
                         continue;
@@ -216,7 +216,7 @@ public class CcArrangeCourseService {
                         }
                         continue;
                     }
-                    //教师名称
+                    //教师工号
                     if (c.getColumnIndex()==3){
                         if (returnStr!=""&& returnStr !=null){
                             List<CcTeacher> teacherList = CcTeacher.dao.findNameTeacher(returnStr, schoolId);
@@ -224,13 +224,13 @@ public class CcArrangeCourseService {
                                 teacherId=teacherList.get(0).getLong("id");
                                 ccTeacherCourse.set("teacher_id", teacherId);
                             }else if (teacherList.size()>1){
-                                return Result.error("错误：该"+couseName+"课程的教师名称系统里有多个重复的，请检查！");
+                                return Result.error("错误：该"+couseName+"课程的教师工号系统里有多个重复的，请检查！");
                             }else {
-                                return Result.error("错误：该"+couseName+"课程的教师名称系统里没有找到，请检查！");
+                                return Result.error("错误：该"+couseName+"课程的教师工号系统里没有找到，请检查！");
                             }
                         }
                         else{
-                            return Result.error("错误：该"+couseName+"课程的教师名称不可为空，请检查！");
+                            return Result.error("错误：该"+couseName+"课程的教师工号不可为空，请检查！");
                         }
                         //判断是否重复课程 验证教师+课程+学期+年级 不能重复
                         if(CcTeacherCourse.dao.isExisted(courseId, teacherId, termId, grade, null)){

@@ -66,13 +66,14 @@ public class CcCourseTargetIndication extends DbModel<CcCourseTargetIndication> 
 	 * @author SY 
 	 * @version 创建时间：2017年11月29日 上午11:29:22 
 	 */
-	public List<CcCourseTargetIndication> findByIndicatorPointId(Long indicatorPointId) {
+	public List<CcCourseTargetIndication> findByIndicatorPointId(Long indicatorPointId,Long courseId) {
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder("select ccti.*, cic.indication_id indicatorPointId from " + tableName + " ccti ");
 		sql.append("inner join " + CcIndicationCourse.dao.tableName + " cic on cic.id = ccti.indication_course_id ");
-		sql.append("where cic.is_del = ? and cic.indication_id = ? ");
+		sql.append("where cic.is_del = ? and cic.indication_id = ? and cic.course_id=? ");
 		params.add(DEL_NO);
 		params.add(indicatorPointId);
+		params.add(courseId);
 		return find(sql.toString(), params.toArray());
 	}
 }

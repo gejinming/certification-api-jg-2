@@ -211,11 +211,12 @@ public class EM00744 extends BaseApi implements IApi {
 		//TODO 2020/07/02 gjm 异步更新改为由按钮触发
 		/*// 更新教学班的平均成绩和总成绩
 		CcEduindicationStuScoreService ccEduindicationStuScoreService = SpringContextHolder.getBean(CcEduindicationStuScoreService.class);
+
 		if (!ccEduindicationStuScoreService.calculate(Lists.newArrayList(eduClassId), Lists.<Long>newArrayList())) {
 			result.put("isSuccess", Boolean.FALSE);
 			return renderSUC(result, response, header);
-		}*/
-
+		}
+*/
 		result.put("isSuccess", Boolean.TRUE);
 		return renderSUC(result, response, header);
 	}

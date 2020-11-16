@@ -235,7 +235,7 @@ public class CcTeacherCourseService {
 		}
 		
 		Integer type = ccTeacherCourse.getInt("result_type");
-		if(type == CcTeacherCourse.RESULT_TYPE_SCORE) {
+		if(type == CcTeacherCourse.RESULT_TYPE_SCORE || type == CcTeacherCourse.RESULT_TYPE_SCORE2) {
 			// 考核分析法的重置
 			return forceResetScore(teacherCourseId);
 		} else if(type == CcTeacherCourse.RESULT_TYPE_EVALUATE) {
@@ -753,7 +753,7 @@ public class CcTeacherCourseService {
 			returnMap.put("isSuccess", Boolean.FALSE);
 			returnMap.put("errorMessage", "接收人和分享人的开课课程的达成度计算类型不一致。");
 			return returnMap;
-		} else if(type == CcTeacherCourse.RESULT_TYPE_SCORE) {
+		} else if(type == CcTeacherCourse.RESULT_TYPE_SCORE || type == CcTeacherCourse.RESULT_TYPE_SCORE2) {
 			// 考核分析法的复制
 			return copyScore(teacherCourseId, sharerTeacherCourseId);
 		} else if(type == CcTeacherCourse.RESULT_TYPE_EVALUATE) {
@@ -933,11 +933,15 @@ public class CcTeacherCourseService {
 		for(CcCourseGradecomposeIndication temp : ccCourseGradecomposeIndications) {
 			Long courseGradecomposeIndicationId = temp.getLong("id");
 			Long courseGradecomposeId = temp.getLong("course_gradecompose_id");
+			CcCourseGradecompose ccCourseGradecompose = CcCourseGradecompose.dao.findgradomposeType(courseGradecomposeId);
+			Integer inputScoreType = ccCourseGradecompose.getInt("input_score_type");
 			Long id = idGenerate.getNextValue();
 			temp.set("id", id);
 			temp.set("create_date", date);
 			temp.set("modify_date", date);
-			temp.set("max_score",new BigDecimal("0"));
+			if (inputScoreType!=2){
+				temp.set("max_score",new BigDecimal("0"));
+			}
 			temp.set("course_gradecompose_id", courseGradecomposeIdOldAndNew.get(courseGradecomposeId));
 			
 			CcCourseGradeComposeIndicationIdOldAndNew.put(courseGradecomposeIndicationId, id);

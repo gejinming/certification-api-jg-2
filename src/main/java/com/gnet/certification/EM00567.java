@@ -39,7 +39,7 @@ public class EM00567 extends BaseApi implements IApi {
 		//教学班编号
 	    Long educlassId = paramsLongFilter(param.get("educlassId"));
 	    //判断输入方式 3多批次题目录入，4多批次指标点直接录入
-		Integer inputType = paramsIntegerFilter(param.get("inputType"));
+		Integer inputType =paramsIntegerFilter(param.get("inputType"));
 		
 	    //开课课程成绩组成编号
 	    Long courseGradecomposeId = paramsLongFilter(param.get("courseGradecomposeId"));

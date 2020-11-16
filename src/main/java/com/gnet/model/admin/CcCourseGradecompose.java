@@ -25,7 +25,7 @@ public class CcCourseGradecompose extends DbModel<CcCourseGradecompose> {
 
 	private static final long serialVersionUID = -3958125598237390759L;
 	public final static CcCourseGradecompose dao = new CcCourseGradecompose();
-	
+
 	/**
 	 * 单批次指标点成绩直接输入
 	 */
@@ -164,20 +164,30 @@ public class CcCourseGradecompose extends DbModel<CcCourseGradecompose> {
 	 * @version 创建时间：2017年10月25日 下午3:45:41 
 	 */
 
-	public List<CcCourseGradecompose> findByTeacherCourseIdAndCourseGradeComposeIdsOrderBySort(Long teacherCourseId, List<Long> courseGradeComposeIds) {
+	public List<CcCourseGradecompose> findByTeacherCourseIdAndCourseGradeComposeIdsOrderBySort(Long teacherCourseId, List<Long> courseGradeComposeIds,Long batchId) {
 		List<Object> params = new ArrayList<>();
-		StringBuilder sql = new StringBuilder("select ccg.*, cg.name from " +  tableName + " ccg ");
+		StringBuilder sql = new StringBuilder("select ccg.*, cg.name,cgb.name batchName,cgb.id batchId from " +  tableName + " ccg ");
+
 		sql.append("inner join " + CcGradecompose.dao.tableName + " cg on cg.id = ccg.gradecompose_id and cg.is_del = ? ");
 		params.add(DEL_NO);
+
+		sql.append("left join cc_course_gradecompose_batch cgb on cgb.course_gradecompose_id=ccg.id  and cgb.is_del=0 ");
+
 		sql.append("where ccg.teacher_course_id = ?  and ccg.is_del = ? ");
 		params.add(teacherCourseId);
 		params.add(DEL_NO);
+		if (batchId !=null){
+			sql.append("and cgb.id=? ");
+			params.add(batchId);
+		}
 		if(courseGradeComposeIds != null && !courseGradeComposeIds.isEmpty()) {
 			sql.append("and ccg.id in ("+ CollectionKit.convert(courseGradeComposeIds, ",")+") ");
 		}
 		sql.append("order by ccg.sort asc");
 		return find(sql.toString(), params.toArray());
 	}
+
+
 
 	/**
 	 * 开课课程是否关联了成绩组成以及指标点
@@ -191,17 +201,34 @@ public class CcCourseGradecompose extends DbModel<CcCourseGradecompose> {
 		return Db.queryLong(sql.toString(), DEL_NO, teacherCourseId, DEL_NO) > 0;
 	}
 
+	public List<CcCourseGradecompose> findByEduClassIds(List<Long> eduClassIds) {
+		return findByEduClassIds(eduClassIds,null);
+	}
 	/**
 	 * 查询教学班对应的开课课程的成绩组成
 	 * @param eduClassIds
 	 * @return
 	 */
-	public List<CcCourseGradecompose> findByEduClassIds(List<Long> eduClassIds) {
+	public List<CcCourseGradecompose> findByEduClassIds(List<Long> eduClassIds,Integer inputScoreType) {
+		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder("select ccg.* from " + CcCourseGradecompose.dao.tableName + " ccg ");
 		sql.append("inner join " + CcTeacherCourse.dao.tableName + " ctc on ctc.id = ccg.teacher_course_id and ctc.is_del = ? ");
+		params.add(Boolean.FALSE);
 		sql.append("inner join " + CcEduclass.dao.tableName + " ce on ce.teacher_course_id = ctc.id and ce.is_del = ? and ce.id in (" + CollectionKit.convert(eduClassIds, ",") + ") ");
+		params.add(Boolean.FALSE);
 		sql.append("where ccg.is_del = ? ");
-		return find(sql.toString(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE);
+		params.add(Boolean.FALSE);
+		if (inputScoreType!=null){
+			sql.append(" and input_score_type=? ");
+			params.add(inputScoreType);
+			//剔除财经大学的算法
+			sql.append("and ctc.result_type !=3 ");
+		}
+		return find(sql.toString(), params.toArray());
 	}
 
+	public CcCourseGradecompose findgradomposeType(Long id ){
+		StringBuilder sql = new StringBuilder("select * from " + CcCourseGradecompose.dao.tableName + " where id=? ");
+		return findFirst(sql.toString(),id);
+	}
 }

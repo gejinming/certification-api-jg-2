@@ -63,12 +63,18 @@ public class EM00414 extends BaseApi implements IApi{
 			List<CcCourseGradecomposeIndication> ccCourseGradecomposeIndications = CcCourseGradecomposeIndication.dao.findByCourseGradeComposeDetailId(courseGradeComposeDetailId);
 			//题目删除时开课课程成绩组成编号的题目分数得到对应指标点的满分值需要更新
 			for(CcCourseGradecomposeIndication ccCourseGradecomposeIndication : ccCourseGradecomposeIndications){
+				BigDecimal weight = courseGradeComposeDetail.getBigDecimal("weight");
+				if (weight !=null){
+					BigDecimal newWeight = PriceUtils._sub(ccCourseGradecomposeIndication.getBigDecimal("weight"), weight);
+					ccCourseGradecomposeIndication.set("weight", newWeight);
+				}
+
 				BigDecimal resetScore = PriceUtils._sub(ccCourseGradecomposeIndication.getBigDecimal("max_score"), courseGradeComposeDetail.getBigDecimal("score"));
 				ccCourseGradecomposeIndication.set("modify_date", date);
 				ccCourseGradecomposeIndication.set("max_score", PriceUtils.isZero(resetScore) ? null : resetScore);
 			}
 			if(!ccCourseGradecomposeIndications.isEmpty()) {
-				if (!CcCourseGradecomposeIndication.dao.batchUpdate(ccCourseGradecomposeIndications, "modify_date, max_score")) {
+				if (!CcCourseGradecomposeIndication.dao.batchUpdate(ccCourseGradecomposeIndications, "modify_date, max_score,weight")) {
 					TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 					result.put("isSuccess", false);
 					return renderSUC(result, response, header);

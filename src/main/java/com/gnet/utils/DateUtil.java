@@ -2,9 +2,7 @@ package com.gnet.utils;
 
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import java.util.*;
 import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
@@ -589,4 +587,6 @@ public class DateUtil {
         cal.add(Calendar.DATE, -1);
         return dateToString(cal.getTime(), format);
     }
+
+
 }

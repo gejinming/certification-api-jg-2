@@ -57,7 +57,7 @@ public class EM01199 extends BaseApi implements IApi {
         }else if (inputType==2 || inputType==3){
             //题目录入方式
             //题目数量
-            List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.topicList(courseGradeComposeId,batchId);
+            List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.topicList0(courseGradeComposeId,batchId);
             int topicNum=ccCourseGradeComposeDetails.size();
             //需要录入的成绩数量
             int sumNum=studentNum*topicNum;

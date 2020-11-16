@@ -8,6 +8,7 @@ import com.google.common.collect.Lists;
 import com.jfinal.plugin.activerecord.Page;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -102,6 +103,11 @@ public class CcCourseGradecomposeBatchIndication extends DbModel<CcCourseGradeco
 		sql.append("order by ci.sort asc ");
 		return find(sql.toString(), param.toArray());
 	}
+	public List<CcCourseGradecomposeBatchIndication> findByCourseBatchGradecomposeIds0(List<Long> courseGradeComposeIds,Long batchId,Long gradeIndicationId) {
+		ArrayList<Long> batchIds = Lists.newArrayList();
+		batchIds.add(batchId);
+		return findByCourseBatchGradecomposeIds(courseGradeComposeIds,batchIds,gradeIndicationId);
+	}
 	/*
 	 * @param courseGradecomposeId
 	 * @return java.util.List<com.gnet.model.admin.CcCourseGradecomposeIndication>
@@ -109,15 +115,14 @@ public class CcCourseGradecomposeBatchIndication extends DbModel<CcCourseGradeco
 	 * @description: 批次直接录入方式查询关联的课程目标
 	 * @date 2020/8/27 16:38
 	 */
-	public List<CcCourseGradecomposeBatchIndication> findByCourseBatchGradecomposeIds(List<Long> courseGradeComposeIds,Long batchId,Long gradeIndicationId) {
+	public List<CcCourseGradecomposeBatchIndication> findByCourseBatchGradecomposeIds(List<Long> courseGradeComposeIds,List<Long> batchIds,Long gradeIndicationId) {
 		List<Object> param = Lists.newArrayList();
-		StringBuilder sql = new StringBuilder("select ci.content , ci.sort , ci.id indicationId, cgb.course_gradecompose_id,"
+		StringBuilder sql = new StringBuilder("select cgbi.batch_id,ci.content , ci.sort , ci.id indicationId, cgb.course_gradecompose_id,"
 				+ " cgbi.id courseGradecomposeIndicationId, cgbi.score maxScore,ccgi.id from " + tableName + " cgbi ");
 		sql.append("inner join " + CcIndication.dao.tableName + " ci on ci.id =  cgbi.indication_id ");
 		sql.append("inner join cc_course_gradecompose_batch cgb on cgbi.batch_id=cgb.id and cgb.is_del=0 ");
 		sql.append("INNER JOIN cc_course_gradecompose_indication ccgi on ccgi.course_gradecompose_id = cgb.course_gradecompose_id and cgbi.indication_id=ccgi.indication_id and  ccgi.is_del=0 ");
-		sql.append("where  cgbi.is_del=0  and cgbi.batch_id=?  ");
-		param.add(batchId);
+		sql.append("where  cgbi.is_del=0  and cgbi.batch_id in ("+ CollectionKit.convert(batchIds, ",")+")  ");
 		if(courseGradeComposeIds != null && !courseGradeComposeIds.isEmpty()) {
 			sql.append("and cgb.course_gradecompose_id in ("+ CollectionKit.convert(courseGradeComposeIds, ",")+") ");
 		}

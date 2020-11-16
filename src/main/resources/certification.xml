@@ -139,8 +139,10 @@
         </dic>
         
          <dic type="inputScoreType" name="指标点录入成绩类型">
-        	<key value="1" label="指标点成绩直接录入" />
-            <key value="2" label="题目汇总得到指标点成绩" />
+        	<key value="1" label="单批次指标点成绩直接输入" />
+            <key value="2" label="单批次题目汇总得到指标点成绩" />
+             <key value="3" label="多批次题目汇总得到指标点成绩" />
+             <key value="4" label="多批次指标点成绩直接输入" />
         </dic>
         
          <dic type="evaluteLevel" name="考评点层次">

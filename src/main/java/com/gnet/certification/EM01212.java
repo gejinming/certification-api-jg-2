@@ -63,8 +63,8 @@ public class EM01212 extends BaseApi implements IApi {
 			batchIndication.set("indication_id",indicationId);
 			batchIndication.set("batch_id",batchId);
 			//判断成绩组成是否关联课程目标
-			List<CcCourseGradecomposeIndication> gradecomposeIndication = CcCourseGradecomposeIndication.dao.findGradecomposeIndication(courseGradeComposeId, indicationId);
-			if (gradecomposeIndication.size() ==0 ){
+			CcCourseGradecomposeIndication gradecomposeIndication = CcCourseGradecomposeIndication.dao.findGradecomposeIndication(courseGradeComposeId, indicationId);
+			if (gradecomposeIndication ==null ){
 				return renderFAIL("2573", response, header);
 			}
 			if (scoreS=="" || scoreS == null || scoreS.equals("")){

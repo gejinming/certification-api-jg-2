@@ -57,7 +57,7 @@ public class EM01203 extends BaseApi implements IApi {
         }else {
             //多批次题目录入删除
             if (inputType==3){
-                List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.topicList(null, id);
+                List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.topicList0(null, id);
                 //判断该批次是否有题目
                 if (ccCourseGradeComposeDetails.size()!=0){
                     //判断是否存在有题目已经录入成绩

@@ -12,10 +12,6 @@ import com.google.common.collect.Lists;
 import com.jfinal.plugin.activerecord.Page;
 import org.apache.commons.lang3.StringUtils;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * @type model
  * @description 课程目标表
@@ -238,6 +234,24 @@ public class CcIndication extends DbModel<CcIndication> {
 		sql.append("left join cc_course_target_indication cti on cti.indication_id=ci.id ");
 		sql.append("left join cc_indication_course cic on cic.id=cti.indication_course_id ");
 		sql.append("where ci.is_del = 0 and ci.course_id=? order by sort");
+		return find(sql.toString(), courseId);
+	}
+
+	public List<CcIndication> findCourseIndicationList(Long educlassId,Long courseId,List<Long> indicationList){
+		ArrayList<Long> educlassIds = new ArrayList<>();
+		educlassIds.add(educlassId);
+
+		return findCourseIndicationList(educlassIds,courseId,indicationList);
+	}
+	public List<CcIndication> findCourseIndicationList(List<Long> educlassIds,Long courseId,List<Long> indicationList){
+		StringBuilder sql = new StringBuilder("select ci.*,ceaa.educlass_id,ceaa.achieve_value,ceaa.except_achieve_value,ct.start_year,ct.end_year from " + tableName + " ci ");
+		sql.append("inner join cc_edupoint_each_aims_achieve ceaa on ci.id=ceaa.indication_id ");
+		sql.append("inner join cc_educlass ce on ce.id=ceaa.educlass_id ");
+		sql.append("inner join " + CcTeacherCourse.dao.tableName + " ctc on ctc.id = ce.teacher_course_id ");
+		sql.append("inner join cc_term ct on ct.id =ctc.term_id ");
+		sql.append("where ci.is_del=0 and ceaa.educlass_id in ("+CollectionKit.convert(educlassIds, ",")+") ");
+		sql.append("and ci.course_id=? and ci.id in ("+CollectionKit.convert(indicationList, ",")+") ");
+		sql.append("order by ceaa.educlass_id,ci.id ");
 		return find(sql.toString(), courseId);
 	}
 }

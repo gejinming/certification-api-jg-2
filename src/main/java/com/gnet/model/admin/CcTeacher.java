@@ -712,7 +712,7 @@ public class CcTeacher extends DbModel<CcTeacher> {
 	}
 
 	public List<CcTeacher> findNameTeacher(String name,Long schoolId){
-		StringBuilder sql = new StringBuilder("select * from " + tableName + " where name=? and is_del=0 and school_id=?");
+		StringBuilder sql = new StringBuilder("select * from " + tableName + " where code=? and is_del=0 and school_id=?");
 		return find(sql.toString(),name,schoolId);
 	}
 

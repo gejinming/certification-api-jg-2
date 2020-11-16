@@ -2,7 +2,6 @@ package com.gnet.model.admin;
 
 import java.util.List;
 
-import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import org.apache.commons.lang3.StringUtils;
 
 import com.gnet.model.DbModel;
@@ -328,6 +327,11 @@ public class CcCourseGradecomposeStudetail extends DbModel<CcCourseGradecomposeS
 		param.add(batchId);
 		return  find(sql.toString(), param.toArray());
 
+	}
+
+	public CcCourseGradecomposeStudetail findStudentScore(Long detailId,Long studentId){
+		StringBuilder sql = new StringBuilder("select * from cc_course_gradecompose_studetail where detail_id=? and student_id=? and is_del=0 ");
+		return findFirst(sql.toString(),detailId,studentId);
 	}
 
 }

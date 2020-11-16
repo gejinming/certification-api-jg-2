@@ -79,9 +79,9 @@ public class EM00743 extends BaseApi implements IApi {
         String educlassName = ccTeacherCourse.getStr("educlass_name");
         //课程名称
         String name = ccTeacherCourse.getStr("name");
-        // 判断是否是考核成绩法，不是就直接返回。教师开课类型,1:考核成绩分析法，2：评分表分析法
+        // 判断是否是考核成绩法，不是就直接返回。教师开课类型,1:考核成绩分析法，2：评分表分析法 3: 财经大学考核成绩分析法
         Integer resultType = ccTeacherCourse.getInt("result_type");
-        if(!CcTeacherCourse.RESULT_TYPE_SCORE.equals(resultType)) {
+        if(!CcTeacherCourse.RESULT_TYPE_SCORE.equals(resultType) && !CcTeacherCourse.RESULT_TYPE_SCORE2.equals(resultType)) {
             return renderFAIL("1009", response, header, "课程类型必须为：考核成绩分析法。");
         }
 
@@ -111,7 +111,7 @@ public class EM00743 extends BaseApi implements IApi {
                 Integer startNaturalColumnIndex = 5;
 //    			// 而外参数是从第几行开始的
 //    			Integer startNaturalRowIndex = 1;
-                if(CcTeacherCourse.RESULT_TYPE_SCORE == resultType) {
+                if(CcTeacherCourse.RESULT_TYPE_SCORE == resultType || CcTeacherCourse.RESULT_TYPE_SCORE2 == resultType) {
                     // 考核
                     RowDefinition rowDefinition = ccStudentService.getSingleScoreDefinition(ccTeacherCourse, courseGradeComposeId, startNaturalColumnIndex,batchId);
 

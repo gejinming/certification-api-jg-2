@@ -98,6 +98,11 @@ public class CcEduindicationStuScore extends DbModel<CcEduindicationStuScore> {
 		return find(sql.toString(), DEL_NO, eduClassId);
 	}
 
+	public List<CcEduindicationStuScore> findEduClassScoreList(Long eduClassId,Long courseGradecomposeId){
+		StringBuilder sql = new StringBuilder("select * from " +tableName + "   where is_del=0 and educlass_id=? and gradecompose_indication_id=? ");
+		return find(sql.toString(),eduClassId,courseGradecomposeId);
+
+	}
 	/**
 	 * 计算指定教师开课下面的 总的 指标点成绩组成 总分
 	 * @param teacherCourseIdList

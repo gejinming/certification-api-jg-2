@@ -1,5 +1,6 @@
 package com.gnet.model.admin;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.gnet.model.DbModel;
@@ -180,25 +181,36 @@ public class CcCourseGradeComposeDetail extends DbModel<CcCourseGradeComposeDeta
 		sql.append("group by ccgdi.indication_id ");
 		return find(sql.toString(), param.toArray());
 	}
+
+	public List<CcCourseGradeComposeDetail> topicList0(Long courseGradecomposeId,Long batchId){
+		ArrayList<Long> courseGradecomposeIds = new ArrayList<>();
+		if (courseGradecomposeId!=null){
+			courseGradecomposeIds.add(courseGradecomposeId);
+		}
+		ArrayList<Long> batchIds = new ArrayList<>();
+		if (batchId!=null){
+			batchIds.add(batchId);
+		}
+
+		return topicList(courseGradecomposeIds,batchIds);
+	}
 	/*
 	 * @param courseGradecomposeId
 	 * @return int
 	 * @author Gejm
-	 * @description: 获取成绩组成下的题目
+	 * @description: 获取成绩组成或批次下的题目
 	 * @date 2020/7/3 18:49
 	 */
-	public List<CcCourseGradeComposeDetail> topicList(Long courseGradecomposeId,Long batchId){
+	public List<CcCourseGradeComposeDetail> topicList(List<Long> courseGradecomposeIds,List<Long> batchIds){
 		List<Object> param = Lists.newArrayList();
 		StringBuilder sql = new StringBuilder("select * from cc_course_gradecompose_detail where  is_del =? ");
 
 		param.add(Boolean.FALSE);
-		if (courseGradecomposeId !=null){
-			sql.append("and course_gradecompose_id = ? ");
-			param.add(courseGradecomposeId);
+		if (courseGradecomposeIds.size()>0){
+			sql.append("and course_gradecompose_id in (" +  CollectionKit.convert(courseGradecomposeIds, ",") + ") ");
 		}
-		if (batchId != null){
-			sql.append("and batch_id=? ");
-			param.add(batchId);
+		if (batchIds.size()>0){
+			sql.append("and batch_id in (" +  CollectionKit.convert(batchIds, ",") + ") ");
 		}
 		return find(sql.toString(), param.toArray());
 

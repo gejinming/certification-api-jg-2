@@ -63,7 +63,6 @@ public class EM01198 extends BaseApi implements IApi {
                     //获取格式
                     String styleID = paragraph.getStyleID();
                     logger.info("格式："+paragraph.getStyleID());
-                    //styles.getStyle(strStyle).getCTStyle().getName().getVal()
                     styles.getStyle(styleID).getCTStyle().getName().getVal();
                     // 获取段落内所有XWPFRun
                     List<XWPFRun> runs = paragraph.getRuns();

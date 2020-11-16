@@ -35,38 +35,33 @@ public class AsyncStatisticsEduclassResult implements Job {
 		CcEdupointAimsAchieveService ccEdupointAimsAchieveService = SpringContextHolder.getBean(CcEdupointAimsAchieveService.class);
 		CcEdupointEachAimsAchieveService ccEdupointEachAimsAchieveService = SpringContextHolder.getBean(CcEdupointEachAimsAchieveService.class);
 		
-		// 如实isExcept是ture，就是计算剔除学生之后的数据
-		if(isExcept == null) {
-			// 什么都没有，默认全部操作
+		// 如实isExcept是ture或false，就是计算剔除学生之后的数据
+		if(isExcept == null  ) {
+			// 什么都没有，默认全部操作计算剔除和不剔除的
 			/*
-			 * 1. 统计教学班数据 [TODO SY 这个好像是重复的，我准备删掉了]
+			 * 1. 统计教学班数据
 			 * 2. 统计教学班下各个课程目标的达成度(考核分析法)
 			 * 3. 统计教学班&&课程指标点数据下的课程目标达成度(考核分析法)
 			 */
 			if (
-//									!ccResultStatisticsService.statisticsEduclassResult(eduClassId)
-//									|| 
 					!ccEdupointEachAimsAchieveService.statisticsEdupointEachAimsAchieve(eduClassId)
 					|| !ccEdupointAimsAchieveService.statisticsEdupointAimsAchieve(eduClassId)
 					) {
-//							if (!ccResultStatisticsService.statisticsEduclassResult(eduClassId, resultType)) {
 				ccResultStatisticsService.updateReportBuildRecord(missionKey, CcReportBuildStatus.TYPE_EDUCLASS, CcReportBuildStatus.STATUS_TASK_FAIL, Boolean.TRUE, null);
 				
 				logger.error(new StringBuilder("达成度计算：").append(missionKey).append("发生错误终止失败").toString());
 				return;
 			}
+
 			/*
-			 * 1. 统计教学班数据 [TODO SY 这个好像是重复的，我准备删掉了]
+			 * 1. 统计教学班数据 [TODO SY 这个好像是重复的，我准备删掉了] 这个是计算剔除的
 			 * 2. 统计教学班下各个课程目标的达成度(考核分析法)
 			 * 3. 统计教学班&&课程指标点数据下的课程目标达成度(考核分析法)
 			 */
 			if (
-//									!ccResultStatisticsService.statisticsEduclassResult(eduClassId)
-	//				|| 
 					!ccEdupointEachAimsAchieveService.statisticsEdupointEachAimsAchieveExcept(eduClassId)
 					|| !ccEdupointAimsAchieveService.statisticsEdupointAimsAchieveExcept(eduClassId)
 					) {
-	//						if (!ccResultStatisticsService.statisticsEduclassResult(eduClassId, resultType)) {
 				ccResultStatisticsService.updateReportBuildRecord(missionKey, CcReportBuildStatus.TYPE_EDUCLASS, CcReportBuildStatus.STATUS_TASK_FAIL, Boolean.TRUE, null);
 				
 				logger.error(new StringBuilder("达成度计算：").append(missionKey).append("发生错误终止失败").toString());
@@ -91,26 +86,18 @@ public class AsyncStatisticsEduclassResult implements Job {
 				logger.error(new StringBuilder("达成度计算：").append(missionKey).append("发生错误终止失败").toString());
 				return;
 			}
-		} else {
-			// 当时false的时候
-			/*
-			 * 1. 统计教学班数据 [TODO SY 这个好像是重复的，我准备删掉了]
-			 * 2. 统计教学班下各个课程目标的达成度(考核分析法)
-			 * 3. 统计教学班&&课程指标点数据下的课程目标达成度(考核分析法)
-			 */
-			if (
-//								!ccResultStatisticsService.statisticsEduclassResult(eduClassId)
-//								|| 
-					!ccEdupointEachAimsAchieveService.statisticsEdupointEachAimsAchieve(eduClassId)
-					|| !ccEdupointAimsAchieveService.statisticsEdupointAimsAchieve(eduClassId)
-					) {
-//						if (!ccResultStatisticsService.statisticsEduclassResult(eduClassId, resultType)) {
-				ccResultStatisticsService.updateReportBuildRecord(missionKey, CcReportBuildStatus.TYPE_EDUCLASS, CcReportBuildStatus.STATUS_TASK_FAIL, Boolean.TRUE, null);
-				
-				logger.error(new StringBuilder("达成度计算：").append(missionKey).append("发生错误终止失败").toString());
-				return;
-			}
-		}
+		}else{
+		    //计算不剔除的
+            if (
+                    !ccEdupointEachAimsAchieveService.statisticsEdupointEachAimsAchieve(eduClassId)
+                            || !ccEdupointAimsAchieveService.statisticsEdupointAimsAchieve(eduClassId)
+            ) {
+                ccResultStatisticsService.updateReportBuildRecord(missionKey, CcReportBuildStatus.TYPE_EDUCLASS, CcReportBuildStatus.STATUS_TASK_FAIL, Boolean.TRUE, null);
+
+                logger.error(new StringBuilder("达成度计算：").append(missionKey).append("发生错误终止失败").toString());
+                return;
+            }
+        }
 		Long timesElapse = System.currentTimeMillis() - timeNow;
 		ccResultStatisticsService.updateReportBuildRecord(missionKey, CcReportBuildStatus.TYPE_EDUCLASS, CcReportBuildStatus.STATUS_TASK_SUCCESS, Boolean.TRUE, timesElapse);
 		logger.info(new StringBuilder("完成执行11").append(missionKey).toString());

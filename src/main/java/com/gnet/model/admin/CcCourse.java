@@ -271,7 +271,8 @@ public class CcCourse extends DbModel<CcCourse> {
 		sql.append("left join cc_teacher_course ctc on ctc.course_id = cc.id ");
 		sql.append("inner join cc_indication_course cic on cic.course_id = cc.id ");
 		sql.append("inner join " + CcIndicatorPoint.dao.tableName + " ci on ci.id = cic.indication_id ");
-		sql.append("where cc.plan_id = ? and ctc.grade = ? and cc.is_del = ?  ");
+		//2020/10/30之前没有限制评分表分析法
+		sql.append("where cc.plan_id = ? and ctc.grade = ? and cc.is_del = ?  and ctc.result_type !=2 ");
 		params.add(versionId);
 		params.add(grade);
 		params.add(DEL_NO);

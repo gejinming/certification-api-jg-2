@@ -86,7 +86,7 @@ public class EM00982 extends BaseApi implements IApi {
 		}
 
 		//List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.findFilteredByColumn("course_gradecompose_id", courseGradeComposeId);
-		List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.topicList(courseGradeComposeId, batchId);
+		List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.topicList0(courseGradeComposeId, batchId);
 		if(ccCourseGradeComposeDetails.isEmpty()){
 			return renderFAIL("2105", response, header);
 		}

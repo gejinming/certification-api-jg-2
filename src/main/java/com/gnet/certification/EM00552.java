@@ -69,7 +69,7 @@ public class EM00552 extends BaseApi implements IApi {
 //		Date statisticsDate = null;
 		Boolean needUpdate = null;
 		
-		if (CcTeacherCourse.RESULT_TYPE_SCORE.equals(ccTeacherCourse.getInt("result_type"))) {
+		if (CcTeacherCourse.RESULT_TYPE_SCORE.equals(ccTeacherCourse.getInt("result_type"))||CcTeacherCourse.RESULT_TYPE_SCORE2.equals(ccTeacherCourse.getInt("result_type"))) {
 			// 考核分析法数据获取
 			studentInfo = getStudentInfoScore(eduClassId, isCaculate);
 			// 如果是剔除

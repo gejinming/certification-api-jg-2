@@ -171,9 +171,10 @@ public class CcTeacherCourse extends DbModel<CcTeacherCourse> {
 	 * @return
 	 */
 	public CcTeacherCourse findCourseByClassId(Long classId) {
-		StringBuilder sql = new StringBuilder("select ctc.*, cc.plan_id version_id,ce.educlass_name,cc.name  from " + tableName + " ctc ");
+		StringBuilder sql = new StringBuilder("select ctc.*, cc.plan_id version_id,ce.educlass_name,cc.name,ct.start_year,ct.end_year  from " + tableName + " ctc ");
 		sql.append("inner join cc_course cc on cc.id = ctc.course_id ");
 		sql.append("left join cc_educlass ce on ce.teacher_course_id = ctc.id ");
+		sql.append("left join cc_term ct on ct.id =ctc.term_id ");
 		sql.append("where ce.id = ? and ctc.is_del = ?");
 		return findFirst(sql.toString(), classId, DEL_NO);
 	}
@@ -600,5 +601,16 @@ public class CcTeacherCourse extends DbModel<CcTeacherCourse> {
 		sql.append("left join cc_educlass ce on ce.teacher_course_id = ctc.id ");
 		sql.append("where ctc.is_del = ? ");
 		return findFirst(sql.toString(), DEL_NO, courseGradeComposeId, DEL_NO);
+	}
+	/*
+	 * @param courseId
+	 * @return com.gnet.model.admin.CcTeacherCourse
+	 * @author Gejm
+	 * @description: 通过课程id查找开课课程的达成度计算方式，因为一个课程可能有多个计算方式，我目前只取第一个计算方式计算达成度
+	 * @date 2020/10/30 11:48
+	 */
+	public CcTeacherCourse findCourseResultType(Long courseId){
+		StringBuilder sql = new StringBuilder("select * from cc_teacher_course a where  a.is_del=0 and course_id=? LIMIT 1");
+		return findFirst(sql.toString(), courseId);
 	}
 }

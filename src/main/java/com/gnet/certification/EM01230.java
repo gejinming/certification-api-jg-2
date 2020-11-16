@@ -129,9 +129,9 @@ public class EM01230 extends BaseApi implements IApi {
 		try {
 			File fi=new File(path);
 			InputStream in = new FileInputStream(fi);
-			 wb = new XSSFWorkbook(in);
+			wb = new XSSFWorkbook(in);
 			//Workbook wb = WorkbookFactory.create(new File(path));
-			 sheet = wb.getSheetAt(0);
+			sheet = wb.getSheetAt(0);
 			Row row = sheet.getRow(1);
 			Cell cell = row.getCell(0);
 			cell.setCellValue(courseInfos.toString());
@@ -298,7 +298,7 @@ public class EM01230 extends BaseApi implements IApi {
 	}
 
 	private static Map<String, XSSFCellStyle> createStyle(XSSFWorkbook workBook) {
-		//样式
+		//表头样式
 		XSSFCellStyle cellsStyle = workBook.createCellStyle();
 		cellsStyle.setAlignment(HorizontalAlignment.CENTER);
 		cellsStyle.setVerticalAlignment(VerticalAlignment.CENTER);

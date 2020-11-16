@@ -707,7 +707,7 @@ public class CcResultStatisticsService {
 		 * 4.  获取这些课程目标下的学生总分和人数
 		 * 5.  设置数据，保存
 		 */
-		// 1. 获取当前年级和版本下的所有课程
+		// 1. 获取当前年级和版本下排除评分表算法的所有课程
 		List<CcCourse> ccCourseList = CcCourse.dao.findAllByGradeAndVersion(grade, versionId, null, null);
 		List<Long> courseIdList = new ArrayList<>();
 
@@ -864,7 +864,18 @@ public class CcResultStatisticsService {
 		Date date = new Date();
 		// 遍历整个课程，设置数据
 		for(Long courseId : courseIdList) {
+			CcTeacherCourse courseResultType = CcTeacherCourse.dao.findCourseResultType(courseId);
+			//通过课程id查找开课课程的达成度计算方式，因为一个课程可能有多个计算方式，我目前只取第一个计算方式计算这个课程的达成度
+			Integer resultType = courseResultType.getInt("result_type");
+			if (resultType==3){
+				System.out.println("ss");
+			}
+			//开课id
+			Long teacherCourseId = courseResultType.getLong("id");
 			BigDecimal studentNum = new BigDecimal(courseStudentMap.get(courseId) == null ? 0 : courseStudentMap.get(courseId));
+			if (!PriceUtils.greaterThan(studentNum,new BigDecimal("0"))){
+				continue;
+			}
 			Map<Long,  Map<Long, List<Long>>> indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap = courseIndicationCourseIdIndicationIdGradecomposeIndicationIdMap.get(courseId);
 			// 没加过指标点
 			if(indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap == null) {
@@ -877,46 +888,31 @@ public class CcResultStatisticsService {
 				BigDecimal result = new BigDecimal(0);
 				// 遍历课程目标
 				for(Entry<Long, List<Long>> indicationIdAndGradecomposeIndicationIdEntry : indicationIdAndgradecomposeIndicationIdMap.entrySet()) {
-					/*
-					 *  注意：
-					 *  这里如果一个教师课程，有两个教学班，计算课程达成度报表数据的时候，直接把每个学生加起来，除以总学生数。
-					 *  而不是两个教学班的报表加一下除以二。
-					 *  所以不能通过cc_edupoint_aims_achieve的数据处理
-					 *  要重新计算所有学生的总分 和 总人数，算出平均分，然后处理 （即：【课程下的教学班们】 交集 ）
-					 *  result1 = mom1/(son1*期望值)
-					 *  result2 = mom2/(son2*期望值)
-					 *  result3 = mom3/(son3*期望值)
-					 *  result  = 指标点权重 * (result1 , result2, result3)min
-					 *  这里的算法没有改
-					 *  指标点达成度应该为 课程目标大达成度的最小值*指标点权重 也就是result
-					 *  result1、result2、result3 应该为课程达成度
-					 *  课程达成度计算公式(平均分1*权重1+平均分2*权重2+平均分3*权重3……)/(总分1*权重1+总分2*权重2+总分3*权重3……)
-					 *  (平均分1*权重1+平均分2*权重2+平均分3*权重3……)相当于mom
-					 *  总分1*权重1+总分2*权重2+总分3*权重3……)相当于son
-					 */
+
+
 
 					BigDecimal resultTemp = new BigDecimal(0);
 					BigDecimal mom = new BigDecimal(0);
 					BigDecimal son = new BigDecimal(0);
+					BigDecimal A = new BigDecimal(0);
 					// 课程目标
 					Long indicationId = indicationIdAndGradecomposeIndicationIdEntry.getKey();
 					List<Long> gradecomposeIndicationIdList = indicationIdAndGradecomposeIndicationIdEntry.getValue();
+					//所有成绩组成这个课程目标的总权重 如果一个课程不同老师的权重是不同的那这里就需要改动。因为我这里是按照每个开课老师对这个课程的权重设置都是一样的
+					BigDecimal allWeight = CcCourseGradecomposeIndication.dao.calculateSumWeights(teacherCourseId, indicationId);
 					// 遍历每个 课程目标的成绩组成
 					for(Long gradecomposeIndicatoinId : gradecomposeIndicationIdList) {
 						BigDecimal totalGrade = gradecomposeIndicationIdTotalScore.get(gradecomposeIndicatoinId);
-						BigDecimal maxScore = gradecomposeIndicationIdMaxScore.get(gradecomposeIndicatoinId);
-						// 当不存在数据的时候
 						if(totalGrade == null) {
 							continue;
 						}
-
-
+						BigDecimal maxScore = gradecomposeIndicationIdMaxScore.get(gradecomposeIndicatoinId);
 						//权重
 						BigDecimal weight = gradecomposeIndicationIdWeight.get(gradecomposeIndicatoinId);
 						//平均分
+
 						BigDecimal avgGrade = totalGrade.divide(studentNum, 5, RoundingMode.HALF_UP);
-						//平均分*权重
-						mom = mom.add(avgGrade.multiply(weight));
+						// 当不存在数据的时候
 
 						//TODO 2020/09/07 一个课程多个教学班满分计算方式改为(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)/总学生数，
 						// 权重应该是相同的，不然这个还要改
@@ -947,8 +943,55 @@ public class CcResultStatisticsService {
 							maxScores=maxScores.add(indicationMaxScore.multiply(studentNumBig));
 
 						}
-						//(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)/总人数*权重
-						son = son.add(maxScores.divide(studentNum,2).multiply(weight));
+						//平均分满分
+						BigDecimal avgMaxScore=maxScores.divide(studentNum,2);
+						//浙江科技学院的达成度算法
+						if (resultType.equals(CcTeacherCourse.RESULT_TYPE_SCORE)){
+							/*
+							 *  注意：
+							 *  这里如果一个教师课程，有两个教学班，计算课程达成度报表数据的时候，直接把每个学生加起来，除以总学生数。
+							 *  而不是两个教学班的报表加一下除以二。
+							 *  所以不能通过cc_edupoint_aims_achieve的数据处理
+							 *  要重新计算所有学生的总分 和 总人数，算出平均分，然后处理 （即：【课程下的教学班们】 交集 ）
+							 *  result1 = mom1/(son1)
+							 *  result2 = mom2/(son2)
+							 *  result3 = mom3/(son3)
+							 *  result  = 指标点权重 * (result1 , result2, result3)min
+							 *  这里的算法没有改
+							 *  指标点达成度应该为 课程目标大达成度的最小值*指标点权重 也就是result
+							 *  result1、result2、result3 应该为课程达成度
+							 *  课程达成度计算公式(平均分1*权重1+平均分2*权重2+平均分3*权重3……)/(总分1*权重1+总分2*权重2+总分3*权重3……)
+							 *  (平均分1*权重1+平均分2*权重2+平均分3*权重3……)相当于mom
+							 *  总分1*权重1+总分2*权重2+总分3*权重3……)相当于son
+							 *  下面说的满分即使总分
+							 */
+
+							//平均分*权重
+							mom = mom.add(avgGrade.multiply(weight));
+
+
+							//(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)/总人数*权重
+							son = son.add(maxScores.divide(studentNum,2).multiply(weight));
+						}else{
+							/*
+							 * 财经大学课程目标算法：
+							 * 名词：{
+							 * 	A : 课程目标达成度
+							 * 	CO ： 课程目标
+							 * 	S : 成绩组成
+							 * }
+							 * CO1课程目标达成度
+							 * A=（平均分S1/S1总分）*（成绩CO1S1的权重/CO1权重的总和）+（平均分S2/S2总分）*（成绩CO1S2的权重/CO1权重的总和）+....
+							 * mon=平均分S1/S1总分
+							 * son=成绩CO1S1的权重/CO1权重的总和
+							 *  A=mom*son
+							 */
+							mom=avgGrade.divide(avgMaxScore,5);
+							son=weight.divide(allWeight,5);
+							A = A.add(mom.multiply(son));
+
+						}
+
 					}
 					CcIndication ccIndication = ccIndicationMap.get(indicationId);
 					if(ccIndication == null) {
@@ -958,8 +1001,14 @@ public class CcResultStatisticsService {
 					if(son.compareTo(new BigDecimal(0)) == 0) {
 						continue;
 					}
-					//课程目标达成度算法(平均分1*权重1+平均分2*权重2+平均分3*权重3……)/(总分1*权重1+总分2*权重2+总分3*权重3……) mom/son
-					resultTemp = mom.divide(son, 5, RoundingMode.HALF_UP);
+					if (resultType.equals(CcTeacherCourse.RESULT_TYPE_SCORE)){
+						//课程目标达成度算法(平均分1*权重1+平均分2*权重2+平均分3*权重3……)/(总分1*权重1+总分2*权重2+总分3*权重3……) mom/son
+						resultTemp = mom.divide(son, 5, RoundingMode.HALF_UP);
+					}else{
+						//财经大学  A=mom*son  A=（平均分S1/S1总分）*（成绩CO1S1的权重/CO1权重的总和）+（平均分S2/S2总分）*（成绩CO1S2的权重/CO1权重的总和）+....
+						resultTemp = A;
+					}
+
 					//期望值
 					//resultTemp = resultTemp.divide(expectedValue, 5, RoundingMode.HALF_UP);
 					// 如果前者更小，用前者
@@ -1088,34 +1137,6 @@ public class CcResultStatisticsService {
 			String[] keySplit = entry.getKey().split(",");
 			// 指标点编号
 			Long indicationId = Long.valueOf(keySplit[0]);
-			/*//TODO 2020/09/09准备一个只有分级教学的数据,用于课程分组中最小的那个值，合并到总的指标点分数
-			List<CcIndicationCourse> byFenjiCourseVersionId = CcIndicationCourse.dao.findByFenjiCourseVersionId(versionId,indicationId,1,null);
-			for (CcIndicationCourse temp : byFenjiCourseVersionId){
-				//分级教学id
-				Long teachGroupId = temp.getLong("teach_group_id");
-				Long oldGroupId=0l;
-				List<CcIndicationCourse> groupCourse = CcIndicationCourse.dao.findByFenjiCourseVersionId(versionId, indicationId, 2, teachGroupId);
-				for (int i=0; i<groupCourse.size();i++){
-
-					CcIndicationCourse ccIndicationCourse = groupCourse.get(i);
-					Long groupId = ccIndicationCourse.getLong("group_id");
-					Long indicationCourseId = ccIndicationCourse.getLong("id");
-					if (i==0){
-						oldGroupId=groupId;
-					}
-					BigDecimal groupResult = new BigDecimal("0");
-					if (oldGroupId.equals(groupId)){
-						for (CcReportCourse ccReportCourse :saveCcReportCourseList){
-							Long indicationCourseId1 = ccReportCourse.getLong("indication_course_id");
-							if (indicationCourseId.equals(indicationCourseId1)){
-								groupResult=groupResult.add(ccReportCourse.getBigDecimal("except_result"));
-							}
-						}
-					}
-
-				}
-
-			}*/
 			// 专业方向编号
 			Long majorDirectionId = Long.valueOf(keySplit[1]);
 			majorDirectionId = CcReportMajor.NO_MAJORDIRECTION_ID.equals(majorDirectionId) ? null : majorDirectionId;
@@ -1405,7 +1426,15 @@ public class CcResultStatisticsService {
 		Date date = new Date();
 		// 遍历整个课程，设置数据
 		for(Long courseId : courseIdList) {
+			CcTeacherCourse courseResultType = CcTeacherCourse.dao.findCourseResultType(courseId);
+			//通过课程id查找开课课程的达成度计算方式，因为一个课程可能有多个计算方式，我目前用第一个开课老师计算方式计算这个课程的达成度
+			Integer resultType = courseResultType.getInt("result_type");
+			//开课id
+			Long teacherCourseId = courseResultType.getLong("id");
 			BigDecimal studentNum = new BigDecimal(courseStudentMap.get(courseId) == null ? 0 : courseStudentMap.get(courseId));
+			if (!PriceUtils.greaterThan(studentNum,new BigDecimal("0"))){
+				continue;
+			}
 			Map<Long,  Map<Long, List<Long>>> indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap = courseIndicationCourseIdIndicationIdGradecomposeIndicationIdMap.get(courseId);
 			// 没加过指标点
 			if(indicationCourseIdAndIndicationIdAndGradecomposeIndicationIdMap == null) {
@@ -1418,30 +1447,16 @@ public class CcResultStatisticsService {
 				BigDecimal result = new BigDecimal(0);
 				// 遍历课程目标
 				for(Entry<Long, List<Long>> indicationIdAndGradecomposeIndicationIdEntry : indicationIdAndgradecomposeIndicationIdMap.entrySet()) {
-					/*
-					 *  注意：
-					 *  这里如果一个教师课程，有两个教学班，计算课程达成度报表数据的时候，直接把每个学生加起来，除以总学生数。
-					 *  而不是两个教学班的报表加一下除以二。
-					 *  所以不能通过cc_edupoint_aims_achieve的数据处理
-					 *  要重新计算所有学生的总分 和 总人数，算出平均分，然后处理 （即：【课程下的教学班们】 交集 ）
-					 *  result1 = mom1/(son1*期望值)
-					 *  result2 = mom2/(son2*期望值)
-					 *  result3 = mom3/(son3*期望值)
-					 *  result  = 指标点权重 * (result1 , result2, result3)min
-					 *  这里的算法没有改
-					 *  指标点达成度应该为 课程目标大达成度的最小值*指标点权重 也就是result
-					 *  result1、result2、result3 应该为课程达成度
-					 *  课程达成度计算公式(平均分1*权重1+平均分2*权重2+平均分3*权重3……)/(总分1*权重1+总分2*权重2+总分3*权重3……)
-					 *  (平均分1*权重1+平均分2*权重2+平均分3*权重3……)相当于mom
-					 *  总分1*权重1+总分2*权重2+总分3*权重3……)相当于son
-					 */
 
 					BigDecimal resultTemp = new BigDecimal(0);
 					BigDecimal mom = new BigDecimal(0);
 					BigDecimal son = new BigDecimal(0);
+					BigDecimal A = new BigDecimal(0);
 					// 课程目标
 					Long indicationId = indicationIdAndGradecomposeIndicationIdEntry.getKey();
 					List<Long> gradecomposeIndicationIdList = indicationIdAndGradecomposeIndicationIdEntry.getValue();
+					//所有成绩组成这个课程目标的总权重 如果一个课程不同老师的权重是不同的那这里就需要改动。因为我这里是按照每个开课老师对这个课程的权重设置都是一样的
+					BigDecimal allWeight = CcCourseGradecomposeIndication.dao.calculateSumWeights(teacherCourseId, indicationId);
 					// 遍历每个 课程目标的成绩组成
 					for(Long gradecomposeIndicatoinId : gradecomposeIndicationIdList) {
 						BigDecimal totalGrade = gradecomposeIndicationIdTotalScore.get(gradecomposeIndicatoinId);
@@ -1450,8 +1465,6 @@ public class CcResultStatisticsService {
 						if(totalGrade == null) {
 							continue;
 						}
-
-
 						//权重
 						BigDecimal weight = gradecomposeIndicationIdWeight.get(gradecomposeIndicatoinId);
 						//平均分
@@ -1488,8 +1501,55 @@ public class CcResultStatisticsService {
 							maxScores=maxScores.add(indicationMaxScore.multiply(studentNumBig));
 
 						}
-						//(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)/总人数*权重
-						son = son.add(maxScores.divide(studentNum,2).multiply(weight));
+						//平均分满分
+						BigDecimal avgMaxScore=maxScores.divide(studentNum,5);
+						//浙江科技学院的达成度算法
+						if (resultType.equals(CcTeacherCourse.RESULT_TYPE_SCORE)){
+							/*
+							 *  注意：
+							 *  这里如果一个教师课程，有两个教学班，计算课程达成度报表数据的时候，直接把每个学生加起来，除以总学生数。
+							 *  而不是两个教学班的报表加一下除以二。
+							 *  所以不能通过cc_edupoint_aims_achieve的数据处理
+							 *  要重新计算所有学生的总分 和 总人数，算出平均分，然后处理 （即：【课程下的教学班们】 交集 ）
+							 *  result1 = mom1/(son1)
+							 *  result2 = mom2/(son2)
+							 *  result3 = mom3/(son3)
+							 *  result  = 指标点权重 * (result1 , result2, result3)min
+							 *  这里的算法没有改
+							 *  指标点达成度应该为 课程目标大达成度的最小值*指标点权重 也就是result
+							 *  result1、result2、result3 应该为课程达成度
+							 *  课程达成度计算公式(平均分1*权重1+平均分2*权重2+平均分3*权重3……)/(总分1*权重1+总分2*权重2+总分3*权重3……)
+							 *  (平均分1*权重1+平均分2*权重2+平均分3*权重3……)相当于mom
+							 *  总分1*权重1+总分2*权重2+总分3*权重3……)相当于son
+							 *  下面说的满分即使总分
+							 */
+
+							//平均分*权重
+							mom = mom.add(avgGrade.multiply(weight));
+
+
+							//(A班学生数*A班的CO1的满分+B班学生数*B班的CO1的满分)/总人数*权重
+							son = son.add(maxScores.divide(studentNum,2).multiply(weight));
+						}else{
+							/*
+							 * 财经大学课程目标算法：
+							 * 名词：{
+							 * 	A : 课程目标达成度
+							 * 	CO ： 课程目标
+							 * 	S : 成绩组成
+							 * }
+							 * CO1课程目标达成度
+							 * A=（平均分S1/S1总分）*（成绩CO1S1的权重/CO1权重的总和）+（平均分S2/S2总分）*（成绩CO1S2的权重/CO1权重的总和）+....
+							 * mon=平均分S1/S1总分
+							 * son=成绩CO1S1的权重/CO1权重的总和
+							 *  A=mom*son
+							 */
+							mom=avgGrade.divide(avgMaxScore,5);
+							son=weight.divide(allWeight,5);
+							A = A.add(mom.multiply(son));
+
+						}
+
 					}
 					CcIndication ccIndication = ccIndicationMap.get(indicationId);
 					if(ccIndication == null) {
@@ -1499,8 +1559,13 @@ public class CcResultStatisticsService {
 					if(son.compareTo(new BigDecimal(0)) == 0) {
 						continue;
 					}
-					//课程目标达成度算法(平均分1*权重1+平均分2*权重2+平均分3*权重3……)/(总分1*权重1+总分2*权重2+总分3*权重3……) mom/son
-					resultTemp = mom.divide(son, 5, RoundingMode.HALF_UP);
+					if (resultType.equals(CcTeacherCourse.RESULT_TYPE_SCORE)){
+						//课程目标达成度算法(平均分1*权重1+平均分2*权重2+平均分3*权重3……)/(总分1*权重1+总分2*权重2+总分3*权重3……) mom/son
+						resultTemp = mom.divide(son, 5, RoundingMode.HALF_UP);
+					}else{
+						//财经大学  A=mom*son  A=（平均分S1/S1总分）*（成绩CO1S1的权重/CO1权重的总和）+（平均分S2/S2总分）*（成绩CO1S2的权重/CO1权重的总和）+....
+						resultTemp = A;
+					}
 					//期望值
 					//resultTemp = resultTemp.divide(expectedValue, 5, RoundingMode.HALF_UP);
 					// 如果前者更小，用前者

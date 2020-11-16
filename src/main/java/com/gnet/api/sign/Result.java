@@ -1,6 +1,7 @@
 package com.gnet.api.sign;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @program: certification-api-jg-2
@@ -15,8 +16,16 @@ public class Result {
     private String message;
     private List<Long> data;
     private Long count;
+    private Map<Object,Object> dataMap;
 
 
+    public Map<Object, Object> getDataMap() {
+        return dataMap;
+    }
+
+    public void setDataMap(Map<Object, Object> dataMap) {
+        this.dataMap = dataMap;
+    }
 
     private Result(boolean flag, Integer code, String message) {
         super();
@@ -32,6 +41,13 @@ public class Result {
         this.message = message;
         this.data = data;
     }
+    private Result(boolean flag, Integer code,String message, Map<Object,Object> dataMap) {
+        super();
+        this.flag = flag;
+        this.code = code;
+        this.message = message;
+        this.dataMap = dataMap;
+    }
 
     private Result(boolean flag, Integer code, String message, List<Long> data, Long count) {
         super();
@@ -41,6 +57,7 @@ public class Result {
         this.data = data;
         this.count = count;
     }
+
 
 
     public boolean getFlag() {
@@ -93,6 +110,13 @@ public class Result {
         return new Result(true, 200, "成功", data);
     }
 
+    /**
+     * 返回成功消息
+     * @return Result
+     */
+    public static Result ok(Map<Object,Object> dataMap) {
+        return new Result(true, 200, "成功", dataMap);
+    }
     /**
      * 返回成功消息
      * @return Result

@@ -77,9 +77,7 @@ public class CcCourseGradecomposeDetailService {
 		if(!courseGradeComposeDetailList.isEmpty() && courseGradecomposeIndicationList.isEmpty()){
 			return ServiceResponse.error("更新分数前先维护开课课程成绩组成元素和指标点关系 ");
 		}
-		CcTeacherCourse teacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradecomposeId);
-		//达成度计算类型
-		Integer resultType = teacherCourse.getInt("result_type");
+		
 		Map<Long, BigDecimal> scoreMap = Maps.newHashMap();
 		for(CcCourseGradeComposeDetail temp: courseGradeComposeDetailList){
 			scoreMap.put(temp.getLong("indication_id"), temp.getBigDecimal("allScore"));
@@ -95,18 +93,16 @@ public class CcCourseGradecomposeDetailService {
 		for(CcCourseGradecomposeIndication temp : courseGradecomposeIndicationList){
 			Long indicationId = temp.getLong("indication_id");
 			BigDecimal score = scoreMap.get(temp.getLong("indication_id"));
-			//2020/10/27财经学院的满分不做处理
-			if (!resultType.equals(CcTeacherCourse.RESULT_TYPE_SCORE2)){
-				//1.判断是否存在批次
-				if (batchLists.size() != 0){
-					//2.查询包含这个课程目标的批次数量
-					//List<CcCourseGradecomposeDetailIndication> batchList1 = CcCourseGradecomposeDetailIndication.dao.findBatchList(indicationId, courseGradecomposeId);
-					int batchNum = batchLists.size();
-					//if (batchList1.size() !=0){
-						BigDecimal number = new BigDecimal(batchNum);
-						score = PriceUtils.div(score, number, 2);
-					//}
-				}
+
+			//1.判断是否存在批次
+			if (batchLists.size() != 0){
+				//2.查询包含这个课程目标的批次数量
+				//List<CcCourseGradecomposeDetailIndication> batchList1 = CcCourseGradecomposeDetailIndication.dao.findBatchList(indicationId, courseGradecomposeId);
+				int batchNum = batchLists.size();
+				//if (batchList1.size() !=0){
+					BigDecimal number = new BigDecimal(batchNum);
+					score = PriceUtils.div(score, number, 2);
+				//}
 			}
 			temp.set("modify_date", date);
 			temp.set("max_score", score);
@@ -377,7 +373,7 @@ public class CcCourseGradecomposeDetailService {
 	 * @return
 	 */
 	public RowDefinition getComposeDetailScoreDefinition(Long courseGradeComposeId,Long batchId) {
-		List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.topicList(courseGradeComposeId, batchId);
+		List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.topicList0(courseGradeComposeId, batchId);
         // List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails1 = CcCourseGradeComposeDetail.dao.findFilteredByColumn("course_gradecompose_id", courseGradeComposeId);
          Integer size = ccCourseGradeComposeDetails.size();
 
@@ -418,7 +414,7 @@ public class CcCourseGradecomposeDetailService {
         List<Map<String, Object>> errorList = Lists.newArrayList();
 
         //数据库已经存在的题目
-		List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetailList = CcCourseGradeComposeDetail.dao.topicList(courseGradeComposeId, batchId);
+		List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetailList = CcCourseGradeComposeDetail.dao.topicList0(courseGradeComposeId, batchId);
 		//List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetailList = CcCourseGradeComposeDetail.dao.findFilteredByColumn("course_gradecompose_id", courseGradeComposeId);
         List<String> names = Lists.newArrayList();
         for(CcCourseGradeComposeDetail ccCourseGradeComposeDetail : ccCourseGradeComposeDetailList){

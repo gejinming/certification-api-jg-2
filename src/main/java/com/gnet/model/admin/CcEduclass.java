@@ -202,6 +202,20 @@ public class CcEduclass extends DbModel<CcEduclass> {
 		return find(sql.toString(), DEL_NO, DEL_NO,grade);
 	}
 
+	public List<CcEduclass> findAllByEduclass(Long courseId,Integer startYear,Long teacherId) {
+
+
+		StringBuilder sql = new StringBuilder("select cec.* from " + tableName + " cec ");
+		sql.append("inner join " + CcTeacherCourse.dao.tableName + " ctc on ctc.id = cec.teacher_course_id ");
+		sql.append("inner join cc_term ct on ct.id =ctc.term_id ");
+		sql.append("where cec.is_del = ? and ctc.is_del = ? and ct.start_year=? ");
+		sql.append("and ctc.course_id =? and ctc.teacher_id=? ");
+		sql.append("group by cec.id ");
+		//sql.append("group by teacher_course_id, ctc.course_id ");
+
+		return find(sql.toString(), DEL_NO, DEL_NO,startYear,courseId,teacherId);
+	}
+
 	/**
 	 * 查看教学班列表分页
 	 * 

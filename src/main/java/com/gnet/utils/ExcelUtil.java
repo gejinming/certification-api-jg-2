@@ -219,7 +219,7 @@ public class ExcelUtil {
         } else {
             values = getCellValue(row1.getCell(index));
         }
-        return values.replaceAll(" ","").replace("\n","");
+        return values.replace("\n","");
     }
 
    /* public static String delSpecial(String values){

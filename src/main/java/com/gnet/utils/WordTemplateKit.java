@@ -18,7 +18,7 @@ import java.util.UUID;
  */
 public class WordTemplateKit {
 
-    private static final Configuration WORD_CONFIGURATION = new Configuration(Configuration.VERSION_2_3_24);
+    private static final Configuration  WORD_CONFIGURATION = new Configuration(Configuration.VERSION_2_3_24);
 
     private static boolean IS_INIT = false;
 

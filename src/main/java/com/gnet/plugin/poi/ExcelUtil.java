@@ -734,7 +734,7 @@ public class ExcelUtil {
 	    				String[] pullDown = (String[]) paras.get("value");
 	    				// 这个下拉，占了几列
 	    				Integer columnNum = (Integer) paras.get("number");
-	    				HSSFCell cell = row.getCell(naturalColumnIndex - 1); 
+	    				HSSFCell cell = row.getCell(naturalColumnIndex - 1);
 	    				cell.setCellValue(pullDown[thiValutIndex]);    
 	    				// 合并单元格
 	    				if(naturalColumnIndex + columnNum - 2 != naturalColumnIndex - 1) {

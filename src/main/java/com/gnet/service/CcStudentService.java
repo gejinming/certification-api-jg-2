@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.gnet.model.admin.*;
+import org.junit.experimental.theories.FromDataPoints;
 import org.springframework.stereotype.Component;
 
 import com.gnet.plugin.poi.RowDefinition;
@@ -204,24 +205,57 @@ public class CcStudentService {
 		
 		// Map<开课课程成绩组成元素编号, 成绩组成名称>
 		Map<Long, String> courseGradecomposeMap = new HashMap<>();
-		// Map<开课课程成绩组成元素编号, 课程目标名称>
+		// Map<开课课程成绩组成元素编号, 课程目标名称或题号>
+		// TODO 2020/11/04 GJM 需求要求一个教学班成绩整体导入。一次性导入所有成绩，所以增加了一种适应于所有成绩组成的导入模板
 		Map<Long, List<String>> ccCourseGradecomposeIndicationMap = new HashMap<>();
+		Map<Long, Integer> ccCourseGradecomposeInputTypeMap = new HashMap<>();
 		// Map<开课课程成绩组成元素编号, 课程目标排序>
 		Map<Long, List<String>> ccCourseGradecomposeIndicationScortMap = new HashMap<>();
-				
+		ArrayList<Long> batchCourseGradecomposeId = new ArrayList<>();
+		ArrayList<Long> batchIds = new ArrayList<>();
 		// 获取教师开课的成绩组成
-		List<CcCourseGradecompose> courseGradecomposeList = CcCourseGradecompose.dao.findByTeacherCourseIdAndCourseGradeComposeIdsOrderBySort(teacherCourseId, courseGradeComposeIds);
+		List<CcCourseGradecompose>	courseGradecomposeList = CcCourseGradecompose.dao.findByTeacherCourseIdAndCourseGradeComposeIdsOrderBySort(teacherCourseId, courseGradeComposeIds,batchId);
+
 		String[] gradecomposes = new String[courseGradecomposeList.size()];
 		for(int i = 0; i < courseGradecomposeList.size(); i++) {
 			CcCourseGradecompose temp = courseGradecomposeList.get(i);
-			gradecomposes[i] = temp.getStr("name");
 			Long courseGradecomposeId = temp.getLong("id");
+			Long batchId0=null;
+			String batchName=null;
+			//这次是新增一次性导入各个成绩组成成绩的模板，要兼容之前单个批次导入的模板设置，排除有批次的，特殊处理
+			if (batchId ==null){
+				 batchId0 = temp.getLong("batchId");
+				 batchName = temp.getStr("batchName");
+			}
+
+			if (batchName == null ){
+				gradecomposes[i] = temp.getStr("name");
+				ccCourseGradecomposeIndicationMap.put(courseGradecomposeId, new ArrayList<String>());
+			}else {
+				gradecomposes[i] = temp.getStr("name")+"-"+batchName;
+				//含有批次的成绩组成
+				if (!batchCourseGradecomposeId.contains(courseGradecomposeId)){
+					batchCourseGradecomposeId.add(courseGradecomposeId);
+				}
+				if (!batchIds.contains(batchId0)) {
+					batchIds.add(batchId0);
+				}
+				//含有批次的Key courseGradecomposeId+batchId0
+				ccCourseGradecomposeIndicationMap.put(courseGradecomposeId+batchId0, new ArrayList<String>());
+				courseGradeComposeIds.remove(courseGradecomposeId);
+
+			}
 			courseGradecomposeMap.put(courseGradecomposeId, gradecomposes[i]);
-			ccCourseGradecomposeIndicationMap.put(courseGradecomposeId, new ArrayList<String>());
+			if (ccCourseGradecomposeInputTypeMap.get(courseGradecomposeId)==null){
+				//输入类型
+				ccCourseGradecomposeInputTypeMap.put(courseGradecomposeId,temp.getInt("input_score_type"));
+			}
+
 		}
+		//这个是单个批次导入制作模板场景的使用
 		if (batchId !=null){
 			//批次直接录入形式，每个批次包含不同的课程目标
-			List<CcCourseGradecomposeBatchIndication> courseBatchGradecomposeIds = CcCourseGradecomposeBatchIndication.dao.findByCourseBatchGradecomposeIds(courseGradeComposeIds, batchId,null);
+			List<CcCourseGradecomposeBatchIndication> courseBatchGradecomposeIds = CcCourseGradecomposeBatchIndication.dao.findByCourseBatchGradecomposeIds0(courseGradeComposeIds, batchId,null);
 			for (CcCourseGradecomposeBatchIndication temp : courseBatchGradecomposeIds){
 				Long courseGradecomposeId = temp.getLong("course_gradecompose_id");
 				String content = temp.getInt("sort")+":"+temp.getStr("content");
@@ -230,22 +264,88 @@ public class CcStudentService {
 				list.add(content);
 			}
 		}else {
+			//含有直接录入批次的成绩组成
+			if (batchCourseGradecomposeId.size()>0){
+				List<CcCourseGradecomposeBatchIndication> courseBatchGradecomposeIds = CcCourseGradecomposeBatchIndication.dao.findByCourseBatchGradecomposeIds(batchCourseGradecomposeId, batchIds,null);
+				for (CcCourseGradecomposeBatchIndication temp : courseBatchGradecomposeIds){
+					Long courseGradecomposeId = temp.getLong("course_gradecompose_id");
+					Long batchId1 = temp.getLong("batch_id");
+					String content = temp.getInt("sort")+":"+temp.getStr("content");
+					//String sort = temp.getInt("sort").toString();
+					List<String> list = ccCourseGradecomposeIndicationMap.get(courseGradecomposeId+batchId1);
+					list.add(content);
+					//剔除直接录入批次的，就会剩下题目批次成绩组成的了
+					batchCourseGradecomposeId.remove(courseGradecomposeId);
+					batchIds.remove(batchId1);
+				}
+
+			}
+			//剔除直接录入批次之后 只有题目批次成绩组成的
+			if (batchCourseGradecomposeId.size()>0){
+				List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.topicList(batchCourseGradecomposeId, batchIds);
+				for (CcCourseGradeComposeDetail temps: ccCourseGradeComposeDetails){
+					Long courseGradecomposeId = temps.getLong("course_gradecompose_id");
+					Long batchId1 = temps.getLong("batch_id");
+					List<String> list = ccCourseGradecomposeIndicationMap.get(courseGradecomposeId+batchId1);
+					//题号
+					String name = temps.getStr("name");
+					//最高分
+					BigDecimal score = temps.getBigDecimal("score");
+					String detailInfo=name+"("+score+")";
+					//上面ccCourseGradecomposeIndicationList里题目类型的成绩组成包含多个课程目标，会再便利一次所以要题目去重
+					if (!list.contains(detailInfo)){
+						list.add(detailInfo);
+					}
+
+				}
+			}
 			List<CcCourseGradecomposeIndication> ccCourseGradecomposeIndicationList = CcCourseGradecomposeIndication.dao.findDetailByTeacherCourseIdAndCourseGradeComposeIds(teacherCourseId, courseGradeComposeIds);
 			for(CcCourseGradecomposeIndication temp : ccCourseGradecomposeIndicationList) {
 				Long courseGradecomposeId = temp.getLong("course_gradecompose_id");
-				String content = temp.getInt("sort")+":"+temp.getStr("content");
+				String content = temp.getInt("sort") + ":" + temp.getStr("content");
 				//String sort = temp.getInt("sort").toString();
-				List<String> list = ccCourseGradecomposeIndicationMap.get(courseGradecomposeId);
-				list.add(content);
+				//录入成绩类型,1:单批次指标点成绩直接输入,2单批次题目明细计算获得，3：多批次由题目明细计算得，4：多批次指标点成绩直接输入
+				Integer inputType = ccCourseGradecomposeInputTypeMap.get(courseGradecomposeId);
+
+				if (inputType == 1) {
+					List<String> list = ccCourseGradecomposeIndicationMap.get(courseGradecomposeId);
+					//直接输入类型的
+					list.add(content);
+				}else if (inputType == 2){
+					List<String> list = ccCourseGradecomposeIndicationMap.get(courseGradecomposeId);
+					//题目列表
+					List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails = CcCourseGradeComposeDetail.dao.topicList0(courseGradecomposeId, null);
+					for (CcCourseGradeComposeDetail temps: ccCourseGradeComposeDetails){
+						//题号
+						String name = temps.getStr("name");
+						//最高分
+						BigDecimal score = temps.getBigDecimal("score");
+						String detailInfo=name+"("+score+")";
+						//上面ccCourseGradecomposeIndicationList里题目类型的成绩组成包含多个课程目标，会再便利一次所以要题目去重
+						if (!list.contains(detailInfo)){
+							list.add(detailInfo);
+						}
+
+					}
+				}
+
+
 				//list.add(sort);
 			}
 		}
 
-
+		//这个值应该是标题合并的行数+3 columnNum + 3
         int columnNum = 0;
         for (CcCourseGradecompose temp : courseGradecomposeList) {
             Long courseGradecomposeId = temp.getLong("id");
-            List<String> list = ccCourseGradecomposeIndicationMap.get(courseGradecomposeId);
+			Long batchId0 = temp.getLong("batchId");
+			List<String> list;
+			if (batchId0 !=null && batchId == null){
+				list= ccCourseGradecomposeIndicationMap.get(courseGradecomposeId+batchId0);
+			}else {
+				 list = ccCourseGradecomposeIndicationMap.get(courseGradecomposeId);
+			}
+
             int size = list.size();
             if (size == 0) {
                 list.add("");
@@ -277,9 +377,21 @@ public class CcStudentService {
 			// sencondMap1 赋值
 			CcCourseGradecompose temp = courseGradecomposeList.get(i);
 			Long courseGradecomposeId = temp.getLong("id");
-			String gradecomposeName = temp.getStr("name"); 
-			
-			List<String> indicationList = ccCourseGradecomposeIndicationMap.get(courseGradecomposeId);
+			String batchName = temp.getStr("batchName");
+			Long batchId1 = temp.getLong("batchId");
+			String gradecomposeName;
+			List<String> indicationList;
+			if (batchName != null && batchId==null && batchId1 != null){
+				gradecomposeName = temp.getStr("name")+"-"+batchName;
+				//课程目标或者题号
+				 indicationList = ccCourseGradecomposeIndicationMap.get(courseGradecomposeId+batchId1);
+			}else {
+				gradecomposeName = temp.getStr("name");
+				//课程目标或者题号
+				indicationList=ccCourseGradecomposeIndicationMap.get(courseGradecomposeId);
+			}
+			Integer inputType = ccCourseGradecomposeInputTypeMap.get(courseGradecomposeId);
+
 			RowDefinition.ValidateDefinition subGrade2Validate = new RowDefinition.ValidateDefinition(indicationList.toArray(new String[indicationList.size()]));
 			
 			Integer number = indicationList.size();
@@ -295,11 +407,21 @@ public class CcStudentService {
 			firstNaturalColumnIndex = firstNaturalColumnIndex + number;
 			
 			for(int indicationIndex = 0;secondNaturalColumnIndex != firstNaturalColumnIndex; indicationIndex++) {
+				RowDefinition.ColumnDefinition cloumn;
 				// sencondMap2 赋值
-				RowDefinition.ColumnDefinition cloumn = RowDefinition.ColumnDefinition
-					.createCommonColumn(secondNaturalColumnIndex - 1, "CO" + indicationList.get(indicationIndex))
-					.setValidateDefinition(subGrade2Validate)
-					;
+				//直接录入方式，批次直接录入方式
+				if (inputType==1 || inputType==4){
+					 cloumn = RowDefinition.ColumnDefinition
+							.createCommonColumn(secondNaturalColumnIndex - 1, "CO" + indicationList.get(indicationIndex))
+							.setValidateDefinition(subGrade2Validate)
+							;
+				}else{
+					cloumn = RowDefinition.ColumnDefinition
+							.createCommonColumn(secondNaturalColumnIndex - 1,indicationList.get(indicationIndex))
+							.setValidateDefinition(subGrade2Validate)
+							;
+				}
+
 				((GroupColumnDefinition) gradecompose).addColumn(cloumn);
 				secondNaturalColumnIndex++;
 			}
@@ -781,7 +903,7 @@ public class CcStudentService {
 			ArrayList<Long> courseGradeComposeIds = new ArrayList<>();
 			courseGradeComposeIds.add(courseGradeComposeId);
 			//批次直接录入形式，每个批次包含不同的课程目标
-			List<CcCourseGradecomposeBatchIndication> courseBatchGradecomposeIds = CcCourseGradecomposeBatchIndication.dao.findByCourseBatchGradecomposeIds(courseGradeComposeIds, batchId,null);
+			List<CcCourseGradecomposeBatchIndication> courseBatchGradecomposeIds = CcCourseGradecomposeBatchIndication.dao.findByCourseBatchGradecomposeIds0(courseGradeComposeIds, batchId,null);
 			for (CcCourseGradecomposeBatchIndication temp : courseBatchGradecomposeIds){
 				Long courseGradecomposeIndicationId = temp.getLong("courseGradecomposeIndicationId");
 				Long courseGradecomposeId = temp.getLong("course_gradecompose_id");
@@ -851,6 +973,150 @@ public class CcStudentService {
 			returnHeadMap.put(key, coValue);
 		}
 		
+		// 获取这些成绩组成的课程目标
+		returnMap.put("head", returnHeadMap);
+		returnMap.put("headId", returnHeadIdMap);
+		return returnMap;
+	}
+	/**
+	 * 获得考核分析法的层次结构
+	 * @param ccTeacherCourse
+	 * 			教师开课信息
+	 * @param courseGradeComposeId
+	 * 			开课成绩组成编号（为空，则不限制）
+	 * @author SY
+	 * @version 创建时间：2017年10月10日 上午11:15:38
+	 * return
+	 * 	Map<成绩组成名字, List<指标点名字>>
+	 */
+	public Map<String, Object> getScoreMap2(CcTeacherCourse ccTeacherCourse, Long courseGradeComposeId,Long batchId) {
+		ArrayList<Long> courseGradeComposeIdList = new ArrayList<>();
+		courseGradeComposeIdList.add(courseGradeComposeId);
+		Map<String, Object> returnMap = new HashMap<>();
+		Map<String, Object> returnHeadMap = new HashMap<>();
+
+		Map<String, Object> returnHeadIdMap = new HashMap<>();
+		// 《成绩组成名称，Map<课程目标名字，课程目标编号>》
+		Map<String, Map<String, Long>> returnHeadGradecomposeIndicationIdMap = new HashMap<>();
+		// 《成绩组成名称，Map<课程目标名字，courseGradecomposeIndicationId>
+		Map<String, Map<String, Long>> courseGradecomposeIndicationIdMap = new HashMap<>();
+		// 《成绩组成名称，Map<课程目标名字，课程目标满分数值>
+		Map<String, Map<String, BigDecimal>> courseGradecomposeIndicationFullScoreMap = new HashMap<>();
+		returnHeadIdMap.put("returnHeadGradecomposeIndicationIdMap", returnHeadGradecomposeIndicationIdMap);
+		returnHeadIdMap.put("courseGradecomposeIndicationIdMap", courseGradecomposeIndicationIdMap);
+		returnHeadIdMap.put("courseGradecomposeIndicationFullScoreMap", courseGradecomposeIndicationFullScoreMap);
+
+		Long teacherCourseId = ccTeacherCourse.getLong("id");
+
+		// Map<开课课程成绩组成元素编号, 成绩组成名称>
+		Map<Long, String> courseGradecomposeMap = new HashMap<>();
+		List<Long> courseGradecomposeIds = new ArrayList<>();
+		// Map<开课课程成绩组成元素编号, 课程目标名称>
+		Map<Long, List<String>> ccCourseGradecomposeIndicationMap = new HashMap<>();
+
+		// 获取教师开课的成绩组成
+//		Page<CcCourseGradecompose> pageCcCourseGradecompose = CcCourseGradecompose.dao.page(pageable, teacherCourseId);
+//		List<CcCourseGradecompose> courseGradecomposeList = pageCcCourseGradecompose.getList();
+		List<CcCourseGradecompose> courseGradecomposeList = CcCourseGradecompose.dao.findByTeacherCourseIdAndCourseGradeComposeIdsOrderBySort(teacherCourseId,courseGradeComposeIdList,batchId);
+
+		for(int i = 0; i < courseGradecomposeList.size(); i++) {
+			CcCourseGradecompose temp = courseGradecomposeList.get(i);
+			String name = temp.getStr("name");
+			Long courseGradecomposeId = temp.getLong("id");
+			String batchName = temp.getStr("batchName");
+			if (batchName !=null){
+				name=name+"-"+batchName;
+			}
+			// 当存在且不是指定开课成绩组成元素的时候，跳过
+			if(courseGradeComposeId != null && !courseGradeComposeId.equals(courseGradecomposeId)) {
+				continue;
+			}
+			courseGradecomposeIds.add(courseGradecomposeId);
+			courseGradecomposeMap.put(courseGradecomposeId, name);
+			ccCourseGradecomposeIndicationMap.put(courseGradecomposeId, new ArrayList<String>());
+
+			Map<String, Long> ccCourseGradecomposeMap = new HashMap<>();
+			returnHeadGradecomposeIndicationIdMap.put(name, ccCourseGradecomposeMap);
+			Map<String, Long> ccCourseGradecomposeIndicationNameMap = new HashMap<>();
+			courseGradecomposeIndicationIdMap.put(name, ccCourseGradecomposeIndicationNameMap);
+			Map<String, BigDecimal> ccCourseGradecomposeIndicationNameScoreMap = new HashMap<>();
+			courseGradecomposeIndicationFullScoreMap.put(name, ccCourseGradecomposeIndicationNameScoreMap);
+		}
+
+		if (batchId != null){
+			ArrayList<Long> courseGradeComposeIds = new ArrayList<>();
+			courseGradeComposeIds.add(courseGradeComposeId);
+			//批次直接录入形式，每个批次包含不同的课程目标
+			List<CcCourseGradecomposeBatchIndication> courseBatchGradecomposeIds = CcCourseGradecomposeBatchIndication.dao.findByCourseBatchGradecomposeIds0(courseGradeComposeIds, batchId,null);
+			for (CcCourseGradecomposeBatchIndication temp : courseBatchGradecomposeIds){
+				Long courseGradecomposeIndicationId = temp.getLong("courseGradecomposeIndicationId");
+				Long courseGradecomposeId = temp.getLong("course_gradecompose_id");
+				String content = temp.getInt("sort")+":"+temp.getStr("content");
+
+				//String sort = temp.getInt("sort").toString();
+				// 当存在且不是指定开课成绩组成元素的时候，跳过
+				if(courseGradeComposeId != null && !courseGradeComposeId.equals(courseGradecomposeId)) {
+					continue;
+				}
+				List<String> list = ccCourseGradecomposeIndicationMap.get(courseGradecomposeId);
+				list.add(content);
+				Long indicationId = temp.getLong("indicationId");
+				String coureGradecomposeName = courseGradecomposeMap.get(courseGradecomposeId);
+				Map<String, Long> indicationNameAndId = returnHeadGradecomposeIndicationIdMap.get(coureGradecomposeName);
+				indicationNameAndId.put(content, indicationId);
+
+				Map<String, Long> indicationNameAndCoursegradecomposeId = courseGradecomposeIndicationIdMap.get(coureGradecomposeName);
+				indicationNameAndCoursegradecomposeId.put(content, courseGradecomposeIndicationId);
+
+				BigDecimal maxScore = temp.getBigDecimal("maxScore");
+				Map<String, BigDecimal> indicationNameAndCoursegradecomposeFullScore = courseGradecomposeIndicationFullScoreMap.get(coureGradecomposeName);
+				indicationNameAndCoursegradecomposeFullScore.put(content, maxScore);
+			}
+
+		}else{
+
+			List<CcCourseGradecomposeIndication> ccCourseGradecomposeIndicationList = CcCourseGradecomposeIndication.dao.findDetailByTeacherCourseId(teacherCourseId);
+			for(CcCourseGradecomposeIndication temp : ccCourseGradecomposeIndicationList) {
+				Long courseGradecomposeIndicationId = temp.getLong("id");
+				Long courseGradecomposeId = temp.getLong("course_gradecompose_id");
+				// 当存在且不是指定开课成绩组成元素的时候，跳过
+				if(courseGradeComposeId != null && !courseGradeComposeId.equals(courseGradecomposeId)) {
+					continue;
+				}
+				// 课程目标名称 2020/06/30 TODO GJM 课程目标名称改为课程目标序号+名称
+				String content = temp.getInt("sort")+":"+temp.getStr("content");
+				List<String> list = ccCourseGradecomposeIndicationMap.get(courseGradecomposeId);
+				list.add(content);
+
+				Long indicationId = temp.getLong("indication_id");
+				String coureGradecomposeName = courseGradecomposeMap.get(courseGradecomposeId);
+				Map<String, Long> indicationNameAndId = returnHeadGradecomposeIndicationIdMap.get(coureGradecomposeName);
+				indicationNameAndId.put(content, indicationId);
+
+				Map<String, Long> indicationNameAndCoursegradecomposeId = courseGradecomposeIndicationIdMap.get(coureGradecomposeName);
+				indicationNameAndCoursegradecomposeId.put(content, courseGradecomposeIndicationId);
+
+				BigDecimal maxScore = temp.getBigDecimal("max_score");
+				Map<String, BigDecimal> indicationNameAndCoursegradecomposeFullScore = courseGradecomposeIndicationFullScoreMap.get(coureGradecomposeName);
+				indicationNameAndCoursegradecomposeFullScore.put(content, maxScore);
+			}
+		}
+		for(Long id : courseGradecomposeIds) {
+			// 当存在且不是指定开课成绩组成元素的时候，跳过
+			if(courseGradeComposeId != null && !courseGradeComposeId.equals(id)) {
+				continue;
+			}
+			String key = courseGradecomposeMap.get(id);
+			List<String> value = ccCourseGradecomposeIndicationMap.get(id);
+			List<String> coValue = new ArrayList<>();
+			//TODO GJM 不能使用自增的，要真实数据库里的目标序号
+			for(Integer i = 1; i <= value.size(); i++) {
+				//coValue.add("CO" + i + ":" + value.get(i - 1));
+				coValue.add("CO" + value.get(i - 1));
+			}
+			returnHeadMap.put(key, coValue);
+		}
+
 		// 获取这些成绩组成的课程目标
 		returnMap.put("head", returnHeadMap);
 		returnMap.put("headId", returnHeadIdMap);

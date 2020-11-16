@@ -584,7 +584,7 @@ public class CcCourseGradecomposeIndication extends DbModel<CcCourseGradecompose
 		params.add(DEL_NO);
 		sql.append("and ccgi.indication_id in (" + CollectionKit.convert(indicationIdList, ",") + ") ");
 		// cess.gradecompose_indication_id = ccgi.id 这个条件导致教学班不一定一致，所以现在加个条件
-		sql.append("and cess.educlass_id = ce.id ");
+		sql.append("and cess.educlass_id = ce.id order by cg.id ");
 		return find(sql.toString(), params.toArray());
 	}
 
@@ -661,10 +661,10 @@ public class CcCourseGradecomposeIndication extends DbModel<CcCourseGradecompose
 	 * @description: 查询课程目标权重满分
 	 * @date 2020/8/27 15:34
 	 */
-	public List<CcCourseGradecomposeIndication> findGradecomposeIndication(Long courseGradeComposeId,Long indicationId){
+	public CcCourseGradecomposeIndication findGradecomposeIndication(Long courseGradeComposeId,Long indicationId){
 		StringBuilder sql = new StringBuilder(" select * from cc_course_gradecompose_indication ");
 		sql.append("where is_del=? and course_gradecompose_id=? and indication_id=? ");
-		return find(sql.toString(), DEL_NO,courseGradeComposeId,indicationId);
+		return findFirst(sql.toString(), DEL_NO,courseGradeComposeId,indicationId);
 	}
 	/*
 	 * @param edClassId

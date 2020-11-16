@@ -29,7 +29,7 @@ public class ExcelExporter {
      * @param targetFile                 输出文件
      */
     public static void exportToExcel(int depth, RowDefinition rowDefinition, ExcelExporterDataProcessor excelExporterDataProcessor, String targetFile) {
-        exportToExcel(depth, rowDefinition, excelExporterDataProcessor, targetFile, "xxxxxx",1);
+        exportToExcel(depth, rowDefinition, excelExporterDataProcessor, targetFile, "1.若不得分或得0分请填0。2.得分最多只保留小数点后2位。",1);
     }
 
     /**

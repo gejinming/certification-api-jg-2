@@ -124,7 +124,7 @@ public class CcEdupointAimsAchieveService {
 			List<Long> indicationList = entry.getValue();
 			// 达成度结果
 			BigDecimal achieveValue = new BigDecimal(0);
-			// 遍历每个教学办下的课程目标达成度
+			// 遍历每个教学班下的课程目标达成度
 			for(CcEdupointEachAimsAchieve ccEdupointEachAimsAchieveTemp : ccEdupointEachAimsAchieves) {
 				BigDecimal achieveValueEach = ccEdupointEachAimsAchieveTemp.getBigDecimal("achieve_value");
 				Long indicationId = ccEdupointEachAimsAchieveTemp.getLong("indication_id");

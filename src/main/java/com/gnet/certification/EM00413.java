@@ -54,21 +54,8 @@ public class EM00413 extends BaseApi implements IApi {
 		Long courseGradecomposeId = paramsLongFilter(param.get("courseGradecomposeId"));
 		List<Long> indicationIds = paramsJSONArrayFilter(param.get("indicationIdArray"), Long.class);
 		BigDecimal weight = paramsBigDecimalFilter(param.get("weight"));
-		CcTeacherCourse teacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradecomposeId);
-		//达成度计算类型
-		Integer resultType = teacherCourse.getInt("result_type");
 		//	TODO 2020/07/07 gjm 增加了批次题目成绩
 		Long batchId = paramsLongFilter(param.get("batchId"));
-		if (resultType.equals(CcTeacherCourse.RESULT_TYPE_SCORE2)){
-			//权重不能小于0
-			if(weight==null ||weight.equals(CcCourseGradecomposeIndication.MIN_WEIGHT) || PriceUtils.greaterThan(CcCourseGradecomposeIndication.MIN_WEIGHT, weight)){
-				return renderFAIL("0763", response, header);
-			}
-			//单个权重不能超过1
-			if(PriceUtils.greaterThan(weight, CcCourseGradecomposeIndication.MAX_WEIGHT)){
-				return renderFAIL("0494", response, header);
-			}
-		}
 		if (id == null) {
 			return renderFAIL("0450", response, header);
 		}
@@ -86,11 +73,11 @@ public class EM00413 extends BaseApi implements IApi {
 		}
 
 		CcCourseGradecomposeStudetail courseGradecomposeStudetail  = CcCourseGradecomposeStudetail.dao.findMaxScoreStudent(id);
-
+		ArrayList<CcCourseGradecomposeIndication> updateGradecomposeIndications = new ArrayList<>();
 		if(courseGradecomposeStudetail != null && PriceUtils.greaterThan(courseGradecomposeStudetail.getBigDecimal("score"), score)){
 			return renderFAIL("0458", response, header);
 		}
-		
+		Date date = new Date();
 		// 指标点可以更新的数据
 		List<Long> addList = Lists.newArrayList();
 		if (!indicationIds.isEmpty()) {
@@ -99,6 +86,36 @@ public class EM00413 extends BaseApi implements IApi {
 			for (Long indicationId : indicationIds) {
 				if (!addList.contains(indicationId)) {
 					addList.add(indicationId);
+
+					if(weight != null){
+						CcCourseGradecompose courseGradecompose = CcCourseGradecompose.dao.findFilteredById(courseGradecomposeId);
+						//目前课程目标总权重
+						BigDecimal allWeight =  CcCourseGradecomposeIndication.dao.calculateSumWeights(courseGradecompose.getLong("teacher_course_id"), indicationId);
+						//当前成绩组成、课程目标的权重
+
+						CcCourseGradecomposeIndication gradecomposeIndication = CcCourseGradecomposeIndication.dao.findGradecomposeIndication(courseGradecomposeId, indicationId);
+						BigDecimal existWeight=new BigDecimal(0);
+						if (gradecomposeIndication !=null){
+							 existWeight = gradecomposeIndication.getBigDecimal("weight");
+							//如果要修改的权重小于等于已经存在的，直接保存即可
+							if (PriceUtils.greaterThan(existWeight,weight)){
+								gradecomposeIndication.set("modify_date",date);
+								gradecomposeIndication.set("weight",weight);
+								updateGradecomposeIndications.add(gradecomposeIndication);
+							}else{
+								//总的-已存在的+新的，是否大于1
+								BigDecimal newWeight = allWeight.subtract(existWeight).add(weight);
+								if (PriceUtils.greaterThan(newWeight, CcCourseGradecomposeIndication.MAX_WEIGHT)) {
+									return renderFAIL("0493", response, header);
+								}else{
+									gradecomposeIndication.set("modify_date",date);
+									gradecomposeIndication.set("weight",weight);
+									updateGradecomposeIndications.add(gradecomposeIndication);
+								}
+							}
+						}
+
+					}
 				} else {
 					repeatList.add(indicationId);
 				}
@@ -107,14 +124,20 @@ public class EM00413 extends BaseApi implements IApi {
 				return renderFAIL("0464", response, header);
 			}
 		}
-
+		if (updateGradecomposeIndications.size()!=0){
+			if(!CcCourseGradecomposeIndication.dao.batchUpdate(updateGradecomposeIndications,"modify_date,weight")){
+				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+				result.put("isSuccess", false);
+				return renderSUC(result, response, header);
+			}
+		}
 		CcCourseGradecompose courseGradecompose = CcCourseGradecompose.dao.findFilteredById(courseGradecomposeId);
 		if (courseGradecompose == null) {
 			return renderFAIL("0471", response, header);
 		}
 
 		// 保存成绩组成明细
-		Date date = new Date();
+
 		CcCourseGradeComposeDetail ccCourseGradeComposeDetail = CcCourseGradeComposeDetail.dao.findFilteredById(id);
 		if (ccCourseGradeComposeDetail == null) {
 			return renderFAIL("0451", response, header);

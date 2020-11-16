@@ -143,9 +143,9 @@ public class CcCourseGradecompBatchService {
                 ccCourseGradecomposeIndication.put("max_score",divideScore);
 
                 //判断是否存在
-                List<CcCourseGradecomposeIndication> gradecomposeIndication = CcCourseGradecomposeIndication.dao.findGradecomposeIndication(courseGradeComposeId, indicationId);
-                if (gradecomposeIndication.size() !=0){
-                    ccCourseGradecomposeIndication.put("id",gradecomposeIndication.get(0).getLong("id"));
+                CcCourseGradecomposeIndication gradecomposeIndication = CcCourseGradecomposeIndication.dao.findGradecomposeIndication(courseGradeComposeId, indicationId);
+                if (gradecomposeIndication!=null){
+                    ccCourseGradecomposeIndication.put("id",gradecomposeIndication.getLong("id"));
                     updateList.add(ccCourseGradecomposeIndication);
                 }else {
                     ccCourseGradecomposeIndication.put("is_del",Boolean.FALSE);
