@@ -54,6 +54,7 @@ public class EM00675 extends BaseApi implements IApi  {
 		}
 		
 		CcTeacherCourse teacherCourse = CcTeacherCourse.dao.findMaxGrade(latestVersion.getLong("id"));
+		//当前版本课程排课的最大年级与版本的年级比较，哪个大取哪个
 		Integer grade = teacherCourse == null ? latestVersion.getInt("enable_grade") : teacherCourse.getInt("grade");     
 		
 		

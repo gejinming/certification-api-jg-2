@@ -465,6 +465,8 @@ public class CcVersionService {
 		 * 		A16. 课程教学大纲操作记录
 		 * 		A17. 培养计划课程分区表cc_plan_course_zone
 		 * 		A18. 培养计划课程分区各培养计划学期详情表cc_plan_course_zone_term
+		 * 		A19.课程分组信息
+		 * 		A20.课程分级教学信息
 		 */
 		Long newVersionId = allMessage.getLong("newVersionId");
 		CcVersionCreateLogService ccVersionCreateLogService = SpringContextHolder.getBean(CcVersionCreateLogService.class);
@@ -715,7 +717,7 @@ public class CcVersionService {
 				return false;
 			}
 			// 日志更新
-			messageNext = "拷贝课程教学大纲";
+			messageNext = "拷贝课程目标与指标点与课程关系的关系";
 			ccVersionCreateLogService.changeStepJob(versionCreateLogId, "成功" + message + ",正在" + messageNext, type);
 		} catch (Exception e) {
 			ccVersionCreateLogService.changeStepJobForError(versionCreateLogId, message, type);
@@ -733,7 +735,7 @@ public class CcVersionService {
 				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 				return false;
 			}
-			messageNext = "拷贝开课课程成绩组成元素课程目标关联的分数范围备注";
+			messageNext = "拷贝课程大纲";
 			ccVersionCreateLogService.changeStepJob(versionCreateLogId, "成功" + message + ",正在" + messageNext, type);
 		} catch (Exception e) {
 			ccVersionCreateLogService.changeStepJobForError(versionCreateLogId, message, type);
@@ -1380,7 +1382,7 @@ public class CcVersionService {
 				allMessage.set("oldAndNewCourseHierarchyIds", oldAndNewCourseHierarchyIds);
 			}
 			/*
-			 *  新增次要课程性质 2019-12-9 15:34:10 Edit By Sy
+			 *  新增次要课程层次 2019-12-9 15:34:10 Edit By Sy
 			 */
 			List<CcCourseHierarchySecondary> ccCourseHierarchySecondarys = CcCourseHierarchySecondary.dao.findFilteredByColumn("plan_id", oldVersionId);
 			if(!ccCourseHierarchySecondarys.isEmpty()){
@@ -1812,7 +1814,7 @@ public class CcVersionService {
 					Long oldId = ccIndication.getLong("id");
 					Long newId = idGenetate.getNextValue();
 					oldAndNewCourseTargetIds.put(oldId, newId);
-					oldCourseTargetIds[i] = newId;
+					oldCourseTargetIds[i] = oldId;
 					ccIndication.set("id", newId);
 					ccIndication.set("create_date", date);
 					ccIndication.set("modify_date", date);
@@ -2254,13 +2256,13 @@ public class CcVersionService {
 				Map<Long, Long> oldAndNewCourseTargetIndicationIds = new HashMap<>();
                 Long[] oldCourseTargetIndicationIds = new Long[ccCourseTargetIndications.size()];
 				for(int i=0; i<ccCourseTargetIndications.size(); i++){
-					CcCourseTargetIndication ccCourseTargetIndication = ccCourseTargetIndications.get(0);
+					CcCourseTargetIndication ccCourseTargetIndication = ccCourseTargetIndications.get(i);
 					oldCourseTargetIndicationIds[i] = ccCourseTargetIndication.getLong("id");
 					Long id = idGenetate.getNextValue();
 					oldAndNewCourseTargetIndicationIds.put(ccCourseTargetIndication.getLong("id"), id);
 					ccCourseTargetIndication.set("id",id);
 					ccCourseTargetIndication.set("create_date", date);
-					ccCourseTargetIndication.set("mmodify_date", date);
+					ccCourseTargetIndication.set("modify_date", date);
 					ccCourseTargetIndication.set("indication_id", oldAndNewCourseTargetIds.get(ccCourseTargetIndication.getLong("indication_id")));
 					ccCourseTargetIndication.set("indication_course_id", oldAndNewIndicationCourseIds.get(ccCourseTargetIndication.getLong("indication_course_id")));
 				}

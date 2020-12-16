@@ -29,13 +29,13 @@ public class CcReportEduclassEvalute extends DbModel<CcReportEduclassEvalute> {
 	 * @param indicationId
 	 * @return
 	 */
-	public List<CcReportEduclassEvalute> findAllByCourseId(Long courseId, Long eduClassId, Long indicationId) {
+	public List<CcReportEduclassEvalute> findAllByCourseId(Long courseId, Long eduClassId, Long indicationProId) {
 		List<Object> params = Lists.newArrayList();
 		StringBuilder sql = new StringBuilder("select cree.*, cet.percentage evalute_type_percentage, cet.type evalute_type, cge.index_num graduateIndexNum, ci.id indication_id, ci.index_num index_num, ci.content content, ci.remark remark, cic.weight indication_weight, ce.index_num evalute_index_num, ce.content evalute_content, ce.remark evalute_remark from " + tableName + " cree ");
 		sql.append("inner join cc_evalute ce on ce.id = cree.evalute_id and ce.is_del = ? ");
 		sql.append("inner join " + CcEvaluteType.dao.tableName + " cet on cet.id = ce.evalute_type_id and cet.is_del = ? ");
 		sql.append("inner join cc_educlass ces on ces.teacher_course_id = ce.teacher_course_id and ces.id = ? ");
-		sql.append("inner join cc_indication ci on ci.id = ce.indication_id ");
+		sql.append("inner join cc_indicator_point ci on ci.id = ce.indication_id ");
 		sql.append("left join " + CcGraduate.dao.tableName + " cge on cge.id = ci.graduate_id ");
 		sql.append("left join cc_indication_course cic on cic.indication_id = ci.id and cic.course_id = ? ");
 		sql.append("where cree.educlass_id = ? and cree.is_del = ? ");
@@ -45,9 +45,9 @@ public class CcReportEduclassEvalute extends DbModel<CcReportEduclassEvalute> {
 		params.add(courseId);
 		params.add(eduClassId);
 		params.add(DEL_NO);
-		if (indicationId != null) {
+		if (indicationProId != null) {
 			sql.append("and ci.id = ? ");
-			params.add(indicationId);
+			params.add(indicationProId);
 		}
 		sql.append("order by ci.index_num asc, ce.index_num asc");
 		

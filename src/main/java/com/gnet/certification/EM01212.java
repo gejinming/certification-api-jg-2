@@ -9,8 +9,11 @@ import com.gnet.api.service.BaseApi;
 import com.gnet.api.service.IApi;
 import com.gnet.model.admin.CcCourseGradecomposeBatchIndication;
 import com.gnet.model.admin.CcCourseGradecomposeIndication;
+import com.gnet.model.admin.CcTeacherCourse;
 import com.gnet.plugin.id.IdGenerate;
+import com.gnet.response.ServiceResponse;
 import com.gnet.service.CcCourseGradecompBatchService;
+import com.gnet.service.CcstudentRaningLeveService;
 import com.gnet.utils.SpringContextHolder;
 import com.jfinal.kit.PathKit;
 import org.springframework.stereotype.Service;
@@ -43,7 +46,13 @@ public class EM01212 extends BaseApi implements IApi {
 		if (scoreStuIndigradeArray == null){
 			return renderFAIL("2572", response, header);
 		}
+		CcTeacherCourse teacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradeComposeId);
+		//达成度计算类型
+		Integer resultType = teacherCourse.getInt("result_type");
+		Integer inputType = teacherCourse.getInt("input_score_type");
+		Long educlassIds = teacherCourse.getLong("educlassId");
 		Date date = new Date();
+		ArrayList<Long> batchIds = new ArrayList<>();
 		IdGenerate idGenerate = SpringContextHolder.getBean(IdGenerate.class);
 		List<CcCourseGradecomposeBatchIndication> batchIndigradeAddList = new ArrayList<>();
 		List<CcCourseGradecomposeBatchIndication> batchIndigradeUpdateList = new ArrayList<>();
@@ -57,7 +66,9 @@ public class EM01212 extends BaseApi implements IApi {
 			if (batchId==null || indicationId== null){
 				return renderFAIL("2572", response, header);
 			}
-
+			if (!batchIds.contains(batchId)){
+				batchIds.add(batchId);
+			}
 			batchIndication.set("create_date",date);
 			batchIndication.set("modify_date",date);
 			batchIndication.set("indication_id",indicationId);
@@ -68,13 +79,18 @@ public class EM01212 extends BaseApi implements IApi {
 				return renderFAIL("2573", response, header);
 			}
 			if (scoreS=="" || scoreS == null || scoreS.equals("")){
-
 				batchIndication.set("score",new BigDecimal("0"));
 				batchIndication.set("is_del",Boolean.TRUE);
 			}else {
 
 				BigDecimal score = map.getBigDecimal("score");
-				batchIndication.set("score",score);
+				//评分表分析法 score就是比例系数
+				if (resultType==2){
+					batchIndication.set("scale_factor",score);
+				}else{
+					batchIndication.set("score",score);
+				}
+
 				batchIndication.set("is_del",Boolean.FALSE);
 			}
 			if ( weightS != null && !weightS.equals("")){
@@ -103,7 +119,7 @@ public class EM01212 extends BaseApi implements IApi {
 		}
 		if (!batchIndigradeUpdateList.isEmpty()){
 
-			if (!CcCourseGradecomposeBatchIndication.dao.batchUpdate(batchIndigradeUpdateList,"modify_date,score,weight,is_del")){
+			if (!CcCourseGradecomposeBatchIndication.dao.batchUpdate(batchIndigradeUpdateList,"modify_date,score,weight,is_del,scale_factor")){
 				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 				result.put("isSuccess", Boolean.FALSE);
 				return renderSUC(result, response, header);
@@ -117,6 +133,20 @@ public class EM01212 extends BaseApi implements IApi {
 			result.put("isSuccess", Boolean.FALSE);
 			return renderSUC(result, response, header);
 		}
+		//评分表分析法
+		if (resultType==2){
+			for (int i=0;i<batchIds.size();i++){
+				Long batchId = batchIds.get(i);
+				//更新了比例就要重新计算成绩
+				CcstudentRaningLeveService cstudentRaningLeveService = SpringContextHolder.getBean(CcstudentRaningLeveService.class);
+				ServiceResponse serviceResponse = cstudentRaningLeveService.mangeRaningLeveScore(courseGradeComposeId,inputType,educlassIds,batchId);
+				if(!serviceResponse.isSucc()){
+					return renderFAIL("0804", response, header, serviceResponse.getContent());
+				}
+			}
+
+		}
+
 		result.put("isSuccess", Boolean.TRUE);
 		return renderSUC(result, response, header);
 	}

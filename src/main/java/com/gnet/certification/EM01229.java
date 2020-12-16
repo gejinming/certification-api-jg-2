@@ -54,6 +54,9 @@ public class EM01229 extends BaseApi implements IApi {
 		Long educlassId = paramsLongFilter(param.get("educlassId"));
 		String token = request.getHeader().getToken();
 		Long schoolId = UserCacheKit.getSchoolId(token);
+		if (educlassId == null) {
+			return renderFAIL("0380", response, header);
+		}
 		// fileInfo合法性验证
 		if (fileInfoObject == null || !(fileInfoObject instanceof FileInfo)) {
 			return renderFAIL("0087", response, header);

@@ -71,6 +71,8 @@ public class EM00971 extends BaseApi implements IApi {
 		}
 
 		CcTeacherCourse ccTeacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradeComposeId);
+		//达成度计算类型
+		Integer resultType = ccTeacherCourse.getInt("result_type");
 		if(ccTeacherCourse == null){
 			return renderFAIL("0501", response, header);
 		}
@@ -103,6 +105,12 @@ public class EM00971 extends BaseApi implements IApi {
 			//通过配置文件得到对应列的列名，如果想改变列名直接修改配置文件即可
 			String no = DictUtils.findLabelByTypeAndKey("subjectImport", 1);
 			String score = DictUtils.findLabelByTypeAndKey("subjectImport", 2);
+			int a =0;
+			if (resultType==2){
+				a =1;
+			}
+			//评分表分析法多一个比例系数
+			String scaleFactor = DictUtils.findLabelByTypeAndKey("subjectImport", 6);
 			String supportIndication = DictUtils.findLabelByTypeAndKey("subjectImport", 3);
 			String detail = DictUtils.findLabelByTypeAndKey("subjectImport", 4);
 			String remark = DictUtils.findLabelByTypeAndKey("subjectImport", 5);
@@ -129,21 +137,26 @@ public class EM00971 extends BaseApi implements IApi {
 			Integer size = ccIndications.size();
 			ColumnDefinition first = preHeader.get(0);
 			ColumnDefinition second = preHeader.get(1);
-			ColumnDefinition secondToLast = preHeader.get(index + 2);
-			ColumnDefinition last = preHeader.get(index + 3);
+			ColumnDefinition secondToLast = preHeader.get(index + 2+a);
+			ColumnDefinition last = preHeader.get(index + 3+a);
 			if(!no.equals(first.getName())){
                 return renderFAIL("2103", response, header, String.format("excel中的第1列列名不是%s,请检查", no));
 			}
 			if(!score.equals(second.getName())){
 				return renderFAIL("2103", response, header, String.format("excel中的第2列列名不是%s,请检查", score));
 			}
-
+			if (resultType == 2){
+				ColumnDefinition scaleFactors = preHeader.get(2);
+				if(!scaleFactor.equals(scaleFactors.getName())){
+					return renderFAIL("2103", response, header, String.format("excel中的第3列列名不是%s,请检查", scaleFactor));
+				}
+			}
 			//如果存在课程目标，验证一级列名以及二级列名是否正确
 			if(!ccIndications.isEmpty()){
-				ColumnDefinition group = preHeader.get(2);
+				ColumnDefinition group = preHeader.get(2+a);
 				// 课程目标列表
-				Integer startIndex = 3,
-						endIndex = size + 2;
+				Integer startIndex = 3+a,
+						endIndex = size + 2+a;
 				List<ColumnDefinition> indicationHeader = ((GroupColumnDefinition) group).getColumns();
 				if(indicationHeader.size() == 1){
 					if(!supportIndication.equals(group.getName())){
@@ -164,10 +177,10 @@ public class EM00971 extends BaseApi implements IApi {
 			}
 
 			if(!detail.equals(secondToLast.getName())){
-				return renderFAIL("2103", response, header, String.format("excel中的第%s列列名不是%s,请检查", size + 3, detail));
+				return renderFAIL("2103", response, header, String.format("excel中的第%s列列名不是%s,请检查", size + 3+a, detail));
 			}
             if(!remark.equals(last.getName())){
-				return renderFAIL("2103", response, header, String.format("excel中的第%s列列名不是%s,请检查", size + 4, remark));
+				return renderFAIL("2103", response, header, String.format("excel中的第%s列列名不是%s,请检查", size + 4+a, remark));
 			}
 
             //解析excel中的body数据
@@ -188,7 +201,7 @@ public class EM00971 extends BaseApi implements IApi {
 				return renderFAIL("2100", response, header);
 			}
 
-			ccCourseGradecomposeDetailService.validateImportSubject(subjects, ccCourseGradeComposeDetails, courseGradeComposeId, indicationIdMap, ccCourseGradecomposeDetailIndications, ccIndications,batchId);
+			ccCourseGradecomposeDetailService.validateImportSubject(subjects, ccCourseGradeComposeDetails, courseGradeComposeId, indicationIdMap, ccCourseGradecomposeDetailIndications, ccIndications,batchId,resultType);
 			result.put("header", prHeaderTow);
 		} catch (Exception e) {
 			e.printStackTrace();

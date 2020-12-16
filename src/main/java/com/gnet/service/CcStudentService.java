@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.gnet.model.admin.*;
-import org.junit.experimental.theories.FromDataPoints;
 import org.springframework.stereotype.Component;
 
 import com.gnet.plugin.poi.RowDefinition;
@@ -457,100 +456,63 @@ public class CcStudentService {
 	 * return 
 	 * 	Map<第几行，Map<第几列,Map<当前成绩组成细啊有几个考评点/考评点名称数组, 对应的数值>>> 
 	 */
-	public RowDefinition getEvaluateDefinition(CcTeacherCourse ccTeacherCourse, Integer startNaturalColumnIndex) {
-		
+	public RowDefinition getEvaluateDefinition(CcTeacherCourse ccTeacherCourse, Integer startNaturalColumnIndex,Long courseGradeComposeId) {
+		//TODO 2020.12.16考评点分析法大改动跟考核成绩分析法差不多
 		Long teacherCourseId = ccTeacherCourse.getLong("id");
 		Long courseId = ccTeacherCourse.getLong("course_id");
 		
 		List<String> evaluteTypeNameList = new ArrayList<>();
-		// Map<考评点类型编号, name>
-		Map<Long, String> evaluteTypeMap = new HashMap<>();
-		// 获取考评点类型
-		List<CcEvaluteType> ccEvaluteTypes = CcEvaluteType.dao.findByTeacherCourseId(teacherCourseId);
-		for(CcEvaluteType temp : ccEvaluteTypes) {
-			Integer type = temp.getInt("type");
-			Long ccEvaluteTypeId = temp.getLong("id");
-			String name = DictUtils.findLabelByTypeAndKey("evaluteType", type);
+
+		//等级制级别，一个课程的所有成绩组成的等级制都是一样的
+		int hierarchyLevel=5;
+		//获取成绩组成
+		List<CcCourseGradecompose> ccCourseGradecomposes = CcCourseGradecompose.dao.findByTeacherCourseIdOrderBySort(teacherCourseId);
+		for(CcCourseGradecompose temp : ccCourseGradecomposes) {
+			 hierarchyLevel = temp.getInt("hierarchy_level");
+			Long courseGradeComposeIds = temp.getLong("id");
+			String name = temp.getStr("name");
 			evaluteTypeNameList.add(name);
-			evaluteTypeMap.put(ccEvaluteTypeId, name);
 		}
-		
-		// 获取指标点
-		// Map<指标点编号，指标点名称>
-		Map<Long, String> ccIndicationMap = new HashMap<>();
-		List<Long> ccIndicationSortList = new ArrayList<>();
-		List<CcIndicationCourse> ccIndicationCourses = CcIndicationCourse.dao.findDetailByCourseId(courseId);
-		for(CcIndicationCourse temp : ccIndicationCourses) {
-			Long indicationId = temp.getLong("indication_id");
-			String content = "指标点" + temp.getInt("graduateIndexNum") + "-" + temp.getInt("index_num");
-			ccIndicationMap.put(indicationId, content);
-			
-			ccIndicationSortList.add(indicationId);
+		//等级制名称
+		String[] levelName = new String[hierarchyLevel];
+		if (hierarchyLevel==5){
+			//五级制
+			for(int i=1; i<= CcRankingLevel.LEVEL_FIVE; i++ ){
+				String evaluteLevelFiveValue = DictUtils.findLabelByTypeAndKey("evaluteLevelFiveValue", i);
+				levelName[i-1]=evaluteLevelFiveValue;
+			}
+		}else{
+			//二级制
+			for(int i=1; i<= CcRankingLevel.LEVEL_TOW; i++ ){
+				String evaluteLevelFiveValue = DictUtils.findLabelByTypeAndKey("evaluteLevelTowValue", i);
+				levelName[i-1]=evaluteLevelFiveValue;
+			}
 		}
-		
-		// 获取考评点
-		// Map<考评点类型编号, List<CcEvalute>>
-		Map<Long, List<CcEvalute>> ccEvaluteTypeAndEvaluteMap = new HashMap<>();
-		// Map<考评点编号， List<indicationName>>
-		Map<Long, List<String>> ccIndicationAndEvaluteMap = new HashMap<>();
-		// Map<考评点类型编号-指标点编号， List<CcEvaluteName>>
-		Map<String, List<String>> ccTypeAndIndicationMap = new HashMap<>();
-//		List<CcEvalute> ccEvalutes = CcEvalute.dao.findFilteredByColumn("teacher_course_id", teacherCourseId);
-		// 需要先排序一下
-		List<CcEvalute> ccEvalutes = CcEvalute.dao.findByTeacherCourse(teacherCourseId);
-		for(CcEvalute temp : ccEvalutes) {
-			Long evaluteTypeId = temp.getLong("evalute_type_id");
-			String content = temp.getStr("content");
-			
-			// 考评点类型关系
-			List<CcEvalute> ccEvaluteTypeTemp = ccEvaluteTypeAndEvaluteMap.get(evaluteTypeId);
-			if(ccEvaluteTypeTemp == null || ccEvaluteTypeTemp.isEmpty()) {
-				ccEvaluteTypeTemp = new ArrayList<>();
-			}
-			ccEvaluteTypeTemp.add(temp);
-			ccEvaluteTypeAndEvaluteMap.put(evaluteTypeId, ccEvaluteTypeTemp);
-			
-			// 指标点关系
-			Long indicationId = temp.getLong("indication_id");
-			
-			List<String> ccEvaluteIndicationTemp = ccIndicationAndEvaluteMap.get(evaluteTypeId);
-			if(ccEvaluteIndicationTemp == null || ccEvaluteIndicationTemp.isEmpty()) {
-				ccEvaluteIndicationTemp = new ArrayList<>();
-			}
-			String indicationName = ccIndicationMap.get(indicationId);
-			ccEvaluteIndicationTemp.remove(indicationName);
-			ccEvaluteIndicationTemp.add(indicationName);
-			ccIndicationAndEvaluteMap.put(evaluteTypeId, ccEvaluteIndicationTemp);
-			
-			// 考评点类型And指标点关系
-			String key = evaluteTypeId + "-" + indicationId;
-			List<String> ccEvaluteTypeAndIndicationTemp = ccTypeAndIndicationMap.get(key);
-			if(ccEvaluteTypeAndIndicationTemp == null || ccEvaluteTypeAndIndicationTemp.isEmpty()) {
-				ccEvaluteTypeAndIndicationTemp = new ArrayList<>();
-			}
-			ccEvaluteTypeAndIndicationTemp.add(content);
-			ccTypeAndIndicationMap.put(key, ccEvaluteTypeAndIndicationTemp);
-		}
-		
+
+
 		// ----------------------------------------- 处理head -----------------------------------
-		RowDefinition rowDefinition = new RowDefinition(ccEvalutes.size() + 3);
+		RowDefinition rowDefinition = new RowDefinition(5);
 
         RowDefinition.ColumnDefinition no = RowDefinition.ColumnDefinition.createCommonColumn(0, "序号");
         RowDefinition.ColumnDefinition studentno = RowDefinition.ColumnDefinition.createCommonColumn(1, "学号");
         RowDefinition.ColumnDefinition name = RowDefinition.ColumnDefinition.createCommonColumn(2, "姓名");
         RowDefinition.ColumnDefinition clazzname = RowDefinition.ColumnDefinition.createCommonColumn(3, "教学班名称");
 
-        RowDefinition.ValidateDefinition header3validate = new RowDefinition.ValidateDefinition(evaluteTypeNameList.toArray(new String[evaluteTypeNameList.size()]));
-        
-        rowDefinition.addColumn(no);
-        rowDefinition.addColumn(studentno);
-        rowDefinition.addColumn(name);
-        rowDefinition.addColumn(clazzname);
-		
-		Integer firstNaturalColumnIndex = startNaturalColumnIndex;
-		Integer secondNaturalColumnIndex = startNaturalColumnIndex;
-		Integer thirdNaturalColumnIndex = startNaturalColumnIndex;
-		List<Long> evaluteTypeAdded = new ArrayList<>();
+		RowDefinition.ValidateDefinition subGrade2Validate = new RowDefinition.ValidateDefinition(levelName);
+
+		RowDefinition.ColumnDefinition evaluteLevel = RowDefinition.ColumnDefinition.createCommonColumn(4, "考评点")
+				.setValidateDefinition(subGrade2Validate).setDataValidationDefinition(subGrade2Validate);
+
+        //RowDefinition.ValidateDefinition header3validate = new RowDefinition.ValidateDefinition(evaluteTypeNameList.toArray(new String[evaluteTypeNameList.size()]));
+
+
+		rowDefinition.addColumn(no);
+		rowDefinition.addColumn(studentno);
+		rowDefinition.addColumn(name);
+		rowDefinition.addColumn(clazzname);
+		rowDefinition.addColumn(evaluteLevel);
+
+		/*List<Long> evaluteTypeAdded = new ArrayList<>();
 		// 遍历考评点类型
 		for(CcEvaluteType temp : ccEvaluteTypes) {
 			Integer type = temp.getInt("type");
@@ -629,7 +591,7 @@ public class CcStudentService {
 //					}
 //				}
 			}
-		}
+		}*/
 		
 		return rowDefinition;
 	}

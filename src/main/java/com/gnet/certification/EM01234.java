@@ -36,9 +36,9 @@ public class EM01234 extends BaseApi implements IApi {
 		if (teacherCourse == null) {
 			return renderFAIL("0251", response, header);
 		}
-		if (indicatorPointId == null) {
+		/*if (indicatorPointId == null) {
 			return renderFAIL("0230", response, header);
-		}
+		}*/
 		//这个课程当前老师的近三年的教学班
 		ArrayList<Long> eduClassIdList = new ArrayList<>();
 		Long teacherCourseId = teacherCourse.getLong("id");

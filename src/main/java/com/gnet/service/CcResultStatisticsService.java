@@ -707,7 +707,7 @@ public class CcResultStatisticsService {
 		 * 4.  获取这些课程目标下的学生总分和人数
 		 * 5.  设置数据，保存
 		 */
-		// 1. 获取当前年级和版本下排除评分表算法的所有课程
+		// 1. 获取当前年级和版本下所有课程
 		List<CcCourse> ccCourseList = CcCourse.dao.findAllByGradeAndVersion(grade, versionId, null, null);
 		List<Long> courseIdList = new ArrayList<>();
 

@@ -81,7 +81,8 @@ public class EM00972 extends BaseApi implements IApi {
 		if(ccTeacherCourse == null){
 			return renderFAIL("0501", response, header);
 		}
-
+		//达成度计算类型
+		Integer resultType = ccTeacherCourse.getInt("result_type");
 		// 判断录入成绩类型是否是由题目明细计算获得,1:指标点成绩直接输入,2:由题目明细计算获得
 		if(!CcCourseGradecompose.SUMMARY_INPUT_SCORE.equals(ccTeacherCourse.getInt("input_score_type")) && !CcCourseGradecompose.SUMMARY_MANYINPUT_SCORE.equals(ccTeacherCourse.getInt("input_score_type"))){
 			return renderFAIL("2102", response, header);
@@ -102,7 +103,7 @@ public class EM00972 extends BaseApi implements IApi {
 			indicationIdMap.put(content, ccIndication.getLong("id"));
 		}
 
-		if(!ccCourseGradecomposeDetailService.validateImportSubject(subjects, ccCourseGradeComposeDetails, courseGradeComposeId, indicationIdMap, ccCourseGradecomposeDetailIndications, ccIndications,batchId)){
+		if(!ccCourseGradecomposeDetailService.validateImportSubject(subjects, ccCourseGradeComposeDetails, courseGradeComposeId, indicationIdMap, ccCourseGradecomposeDetailIndications, ccIndications,batchId,resultType)){
 			return renderFAIL("0953", response, header);
 		}
 

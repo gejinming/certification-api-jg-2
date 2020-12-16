@@ -5,6 +5,7 @@ import java.util.*;
 
 import com.gnet.model.admin.*;
 import com.gnet.service.CcCourseGradecompBatchService;
+import com.gnet.service.CcstudentRaningLeveService;
 import com.gnet.utils.PriceUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -51,12 +52,12 @@ public class EM00412 extends BaseApi implements IApi{
 		String remark = paramsStringFilter(param.get("remark"));
 		Long courseGradecomposeId = paramsLongFilter(param.get("courseGradecomposeId"));
 		List<Long> indicationIds = paramsJSONArrayFilter(param.get("indicationIdArray"), Long.class);
-		CcTeacherCourse courseGradeComposeId = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradecomposeId);
 		//TODO 2020/10/21增加题目权重适用于浙江财经学院的达成度计算
 		BigDecimal weight = paramsBigDecimalFilter(param.get("weight"));
 		//	TODO 2020/07/07 gjm 增加了批次题目成绩
 		Long batchId = paramsLongFilter(param.get("batchId"));
-
+		// TODO 2020.12.10 评分表分析法也采用题目方式，增加比例系数
+		BigDecimal scaleFactor = paramsBigDecimalFilter(param.get("scaleFactor"));
 		if (StrKit.isBlank(name)) {
 			return renderFAIL("0452", response, header);
 		}
@@ -82,6 +83,11 @@ public class EM00412 extends BaseApi implements IApi{
 			}
 
 		}
+		CcTeacherCourse teacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradecomposeId);
+		//达成度计算类型
+		Integer resultType = teacherCourse.getInt("result_type");
+		Integer inputType = teacherCourse.getInt("input_score_type");
+		Long educlassIds = teacherCourse.getLong("educlassId");
 		CcCourseGradecompose courseGradecompose = CcCourseGradecompose.dao.findFilteredById(courseGradecomposeId);
 		if(courseGradecompose == null){
 			return renderFAIL("0471", response, header);
@@ -91,7 +97,7 @@ public class EM00412 extends BaseApi implements IApi{
 		if (ccCourseGradeComposeDetail.isExisted(name,courseGradecomposeId,batchId)){
 			return renderFAIL("2555", response, header);
 		}
-		
+
 		IdGenerate idGenerate = SpringContextHolder.getBean(IdGenerate.class);
 		Long courseGradeComposeDetailId = idGenerate.getNextValue();
 		//成绩组成元素明细保存
@@ -105,6 +111,18 @@ public class EM00412 extends BaseApi implements IApi{
 		ccCourseGradeComposeDetail.set("remark", remark);
 		ccCourseGradeComposeDetail.set("weight", weight);
 		ccCourseGradeComposeDetail.set("course_gradecompose_id", courseGradecomposeId);
+		//评分表分析法
+		if (resultType==2){
+			if (scaleFactor == null) {
+				return renderFAIL("0375", response, header);
+			}
+			//判断比例系数是否大于0小于1
+			if(PriceUtils.greaterThan(CcCourseGradecomposeIndication.MIN_WEIGHT, scaleFactor) || PriceUtils.greaterThan(scaleFactor, CcCourseGradecomposeIndication.MAX_WEIGHT)){
+				return renderFAIL("0376", response, header);
+			}
+			ccCourseGradeComposeDetail.set("scale_factor", scaleFactor);
+		}
+
 		//batchId说明是批次的题目
 		if (batchId !=null){
 			ccCourseGradeComposeDetail.set("batch_id", batchId);
@@ -229,7 +247,15 @@ public class EM00412 extends BaseApi implements IApi{
 			}
 
 		}
-				
+		//评分表分析法，新增题目按题目比例更新成绩
+		if (resultType==2){
+			//更新了比例就要重新计算成绩
+			CcstudentRaningLeveService cstudentRaningLeveService = SpringContextHolder.getBean(CcstudentRaningLeveService.class);
+			ServiceResponse serviceResponses = cstudentRaningLeveService.mangeRaningLeveScore(courseGradecomposeId,inputType,educlassIds,batchId);
+			if(!serviceResponses.isSucc()){
+				return renderFAIL("0804", response, header, serviceResponse.getContent());
+			}
+		}
 		result.put("isSuccess", true);
 		result.put("id", courseGradeComposeDetailId);
 		return renderSUC(result, response, header);

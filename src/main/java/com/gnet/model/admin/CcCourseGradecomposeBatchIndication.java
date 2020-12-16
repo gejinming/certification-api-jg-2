@@ -55,7 +55,7 @@ public class CcCourseGradecomposeBatchIndication extends DbModel<CcCourseGradeco
 	 */
 	public List<CcCourseGradecomposeBatchIndication> indicationSumScore(Long courseGradeComposeId){
 		List<Object> params = Lists.newArrayList();
-		StringBuilder sql = new StringBuilder("SELECT a.indication_id,sum(a.score) score FROM cc_course_gradecompose_batch_indication a ");
+		StringBuilder sql = new StringBuilder("SELECT a.indication_id,sum(a.score) score,sum(a.scale_factor) scaleFactor FROM cc_course_gradecompose_batch_indication a ");
 		sql.append("inner join cc_course_gradecompose_batch b on a.batch_id=b.id and b.is_del=0 ");
 		sql.append("where a.is_del=0 and b.course_gradecompose_id=? ");
 		params.add(courseGradeComposeId);

@@ -117,6 +117,7 @@ public class EM00522 extends BaseApi implements IApi{
 			courseGradecompose.put("percentage", temp.getInt("percentage"));
 			courseGradecompose.put("inputScoreType", temp.getInt("input_score_type"));
 			courseGradecompose.put("inputScoreTypeName", inputScoreTypeName);
+			courseGradecompose.put("hierarchyLevel", temp.get("hierarchy_level"));
 			list.add(courseGradecompose);
 		}
 		result.put("list", list);

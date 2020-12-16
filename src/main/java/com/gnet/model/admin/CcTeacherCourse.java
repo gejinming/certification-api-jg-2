@@ -595,7 +595,7 @@ public class CcTeacherCourse extends DbModel<CcTeacherCourse> {
 	 * @return
 	 */
 	public CcTeacherCourse findByCourseGradeComposeId(Long courseGradeComposeId) {
-		StringBuilder sql = new StringBuilder("select ctc.*, ccg.input_score_type,cc.name,ce.educlass_name from " + tableName + " ctc ");
+		StringBuilder sql = new StringBuilder("select ctc.*, ccg.input_score_type,cc.name,ce.educlass_name,ccg.hierarchy_level,ce.id educlassId from " + tableName + " ctc ");
 		sql.append("inner join " + CcCourseGradecompose.dao.tableName + " ccg on ccg.teacher_course_id = ctc.id and ccg.is_del = ? and ccg.id = ? ");
 		sql.append("inner join cc_course cc on cc.id = ctc.course_id ");
 		sql.append("left join cc_educlass ce on ce.teacher_course_id = ctc.id ");

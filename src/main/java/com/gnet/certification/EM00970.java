@@ -52,6 +52,8 @@ public class EM00970 extends BaseApi implements IApi {
 		}
 
 		CcTeacherCourse ccTeacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradeComposeId);
+		//达成度计算类型
+		Integer resultType = ccTeacherCourse.getInt("result_type");
 		if(ccTeacherCourse == null){
 			return renderFAIL("0501", response, header);
 		}
@@ -76,7 +78,7 @@ public class EM00970 extends BaseApi implements IApi {
 				dir.mkdirs();
 			}
 			// 考核
-			RowDefinition rowDefinition = ccCourseGradecomposeDetailService.getComposeDetailDefinition(courseGradeComposeId);
+			RowDefinition rowDefinition = ccCourseGradecomposeDetailService.getComposeDetailDefinition(courseGradeComposeId,resultType);
 			ExcelExporter.exportToExcel(depth, rowDefinition, new ExcelExporter.ExcelExporterDataProcessor() {
 				@Override
 				public List<List<String>> invoke() {

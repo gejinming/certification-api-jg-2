@@ -272,7 +272,7 @@ public class CcCourse extends DbModel<CcCourse> {
 		sql.append("inner join cc_indication_course cic on cic.course_id = cc.id ");
 		sql.append("inner join " + CcIndicatorPoint.dao.tableName + " ci on ci.id = cic.indication_id ");
 		//2020/10/30之前没有限制评分表分析法
-		sql.append("where cc.plan_id = ? and ctc.grade = ? and cc.is_del = ?  and ctc.result_type !=2 ");
+		sql.append("where cc.plan_id = ? and ctc.grade = ? and cc.is_del = ?  ");
 		params.add(versionId);
 		params.add(grade);
 		params.add(DEL_NO);
@@ -740,6 +740,17 @@ public class CcCourse extends DbModel<CcCourse> {
 		params.add(planId);
 		return  find(sql.toString(),params.toArray());
 
+	}
+	/*
+	 * @param courseId
+	 * @return com.gnet.model.admin.CcCourse
+	 * @author Gejm
+	 * @description: 查找课程的信息及专业
+	 * @date 2020/12/11 11:27
+	 */
+	public CcCourse findCourseMajor(Long courseId){
+		StringBuilder sql = new StringBuilder("select cc.*,cv.major_id from cc_course cc left join cc_version cv on cc.plan_id=cv.id where cc.id=? ");
+		return findFirst(sql.toString(),courseId);
 	}
 
 }

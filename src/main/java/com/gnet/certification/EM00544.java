@@ -110,6 +110,8 @@ public class EM00544 extends BaseApi implements IApi {
 			ccCourseGradecomposeIndication.put("indicationSort", temp.getInt("indicationSort"));
 			ccCourseGradecomposeIndication.put("weight", temp.getBigDecimal("weight"));
 			ccCourseGradecomposeIndication.put("maxScore", temp.getBigDecimal("max_score"));
+			ccCourseGradecomposeIndication.put("scaleFactor", temp.getBigDecimal("scale_factor"));
+			ccCourseGradecomposeIndication.put("hierarchyLevel", temp.get("hierarchy_level"));
 			ccCourseGradecomposeIndication.put("remark", temp.getStr("remark"));
 			ccCourseGradecomposeIndication.put("isDel", temp.getBoolean("is_del"));
 			list.add(ccCourseGradecomposeIndication);
@@ -129,7 +131,7 @@ public class EM00544 extends BaseApi implements IApi {
 	 */
 	private Page<CcCourseGradecomposeIndication> page(Pageable pageable, Long teacherCourseId, Long courseGradecomposeId) {
 		List<Object> param = Lists.newArrayList();
-		String selectString = "select ccgi.*, cg.name gradecomposeName, ci.content indicationContent, ci.sort indicationSort ";
+		String selectString = "select ccgi.*, cg.name gradecomposeName, ci.content indicationContent, ci.sort indicationSort,ccg.hierarchy_level  ";
 		StringBuffer sql =  new StringBuffer("from " + CcCourseGradecomposeIndication.dao.tableName + " ccgi ");
 		sql.append("inner join " + CcCourseGradecompose.dao.tableName + " ccg on ccg.id = ccgi.course_gradecompose_id ");
 		sql.append("inner join " + CcGradecompose.dao.tableName + " cg on cg.id = ccg.gradecompose_id ");

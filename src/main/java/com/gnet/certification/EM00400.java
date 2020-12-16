@@ -24,30 +24,36 @@ import com.google.common.collect.Maps;
  */
 @Transactional(readOnly = false)
 @Service("EM00400")
-@Deprecated // 2020年2月21日 EM00562代替了他
 public class EM00400 extends BaseApi implements IApi {
 
 	@SuppressWarnings("unchecked")
 	public Response excute(Request request, Response response, ResponseHeader header, String method) {
 		Map<String, Object> params = request.getData();
-		// 开课课程成绩组成元素与课程目标关联(//在EM00562中，这是scoreStuIndigradeId：考核成绩分析法学生指标点成绩编号)
+		Long courseGradecomposeId = paramsLongFilter(params.get("courseGradecomposeId"));
 		Long evaluteId = paramsLongFilter(params.get("evaluteId"));
 		Long studentId = paramsLongFilter(params.get("studentId"));
 		// 等级明细编号
 		Long levelId = paramsLongFilter(params.get("levelId"));
+		//批次Id
+		Long batchId = paramsLongFilter(params.get("batchId"));
 		// 课程考评点编号不能为空过滤
 		if (evaluteId == null) {
 			return renderFAIL("0370", response, header);
 		}
-		
+		if( courseGradecomposeId == null) {
+			return renderFAIL("1009", response, header, "courseGradecomposeId的参数值非法");
+		}
 		// 学生编号不能为空过滤
 		if (studentId == null) {
 			return renderFAIL("0330", response, header);
 		}
 		
 		Map<String, Object> searchParams = Maps.newHashMap();
-		searchParams.put("evalute_id", evaluteId);
+		searchParams.put("course_gradecompose_id", courseGradecomposeId);
 		searchParams.put("student_id", studentId);
+		if(batchId!=null){
+			searchParams.put("batch_id", batchId);
+		}
 		CcStudentEvalute ccStudentEvalute = CcStudentEvalute.dao.findFirstByColumn(searchParams, Boolean.TRUE);
 		
 		boolean isSuccess = false;
@@ -57,14 +63,16 @@ public class EM00400 extends BaseApi implements IApi {
 			ccStudentEvalute = new CcStudentEvalute();
 			ccStudentEvalute.set("evalute_id", evaluteId);
 			ccStudentEvalute.set("student_id", studentId);
-			ccStudentEvalute.set("level_id", levelId);
+			//ccStudentEvalute.set("level_id", levelId);
 			ccStudentEvalute.set("create_date", date);
 			ccStudentEvalute.set("modify_date", date);
+			ccStudentEvalute.set("course_gradecompose_id", courseGradecomposeId);
+			ccStudentEvalute.set("batch_id", batchId);
 			ccStudentEvalute.set("is_del", CcStudentEvalute.DEL_NO);
 			ccStudentEvalute.set("id", idGenerate.getNextValue());
 			isSuccess = ccStudentEvalute.save();
 		} else {
-			ccStudentEvalute.set("level_id", levelId);
+			ccStudentEvalute.set("evalute_id", evaluteId);
 			ccStudentEvalute.set("modify_date", date);
 			isSuccess = ccStudentEvalute.update();
 		}

@@ -64,8 +64,8 @@ public class EM00553 extends BaseApi implements IApi {
 		Map<Integer, Integer> evaluteTypes = new HashMap<>();
 		// 返回结果
 		Map<String, Object> result = Maps.newHashMap();
-
-		if (CcTeacherCourse.RESULT_TYPE_SCORE.equals(ccTeacherCourse.getInt("result_type"))) {
+		//TODO 2020.12.11考核分析法和评分表分析法显示一样
+		//if (CcTeacherCourse.RESULT_TYPE_SCORE.equals(ccTeacherCourse.getInt("result_type"))) {
 			// 考核分析法数据获取
 			Map<Long, Map<String, Object>> gradecomposeAndNames = new HashMap<>();
 			List<CcGradecompose> ccGradecomposes = CcGradecompose.dao.findGradecomposeByTeacherCourseId(teacherCourseId);
@@ -101,7 +101,7 @@ public class EM00553 extends BaseApi implements IApi {
 			// 有记录变动建议重新生成报表
 			needUpdate = needToUpdateScore(eduClassId);
 
-		} else if (CcTeacherCourse.RESULT_TYPE_EVALUATE.equals(ccTeacherCourse.getInt("result_type"))) {
+		/*} else if (CcTeacherCourse.RESULT_TYPE_EVALUATE.equals(ccTeacherCourse.getInt("result_type"))) {
 			// 评分表分析法数据获取
 			Map<Integer, Map<String, Object>> evaluteTypeAndNames = new HashMap<>();
 			List<CcEvalute> ccEvalutes = CcEvalute.dao.findAllByEduClass(eduClassId);
@@ -127,7 +127,7 @@ public class EM00553 extends BaseApi implements IApi {
 			needUpdate = needToUpdateEvalute(eduClassId);
 		} else {
 			return renderFAIL("0502", response, header);
-		}
+		}*/
 
 		result.put("studentInfo", studentInfo);
 		result.put("statisticsDate", statisticsDate);

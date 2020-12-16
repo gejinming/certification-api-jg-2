@@ -333,5 +333,20 @@ public class CcCourseGradecomposeStudetail extends DbModel<CcCourseGradecomposeS
 		StringBuilder sql = new StringBuilder("select * from cc_course_gradecompose_studetail where detail_id=? and student_id=? and is_del=0 ");
 		return findFirst(sql.toString(),detailId,studentId);
 	}
+	/*
+	 * @param gradecomposeIndicationIdList
+	 * @return boolean
+	 * @author Gejm
+	 * @description: 根据题号id清空成绩
+	 * @date 2020/12/10 16:58
+	 */
+	public boolean deleAllGradecomposeDetailScore(List<Long> detailIdList){
+		if(detailIdList == null || detailIdList.isEmpty()) {
+			return true;
+		}
+		StringBuilder sql = new StringBuilder("update " + tableName + " cssi ");
+		sql.append("set cssi.is_del=1 where cssi.detail_id in (" + CollectionKit.convert(detailIdList, ",") + ") ");
+		return Db.update(sql.toString()) >= 0;
+	}
 
 }

@@ -30,7 +30,6 @@ import com.google.common.collect.Maps;
  */
 @Transactional(readOnly=false)
 @Service("EM00745")
-@Deprecated
 public class EM00745 extends BaseApi implements IApi {
 
 	@SuppressWarnings("unchecked")

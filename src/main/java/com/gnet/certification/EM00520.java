@@ -48,7 +48,8 @@ public class EM00520 extends BaseApi implements IApi{
 		Long teacherCourseId = paramsLongFilter(param.get("teacherCourseId"));
 		// 成绩组成以及分数
 		JSONArray gradecomposeIdPercentageArray = paramsJSONArrayFilter(param.get("gradecomposeIdPercentageArray"));
-
+		//达成度分析类型
+		Integer resultType = paramsIntegerFilter(param.get("resultType"));
 		Integer allPercentage = 0;
 		//成绩组成元素编号
 		List<Long> gradecomposeIds = new ArrayList<>();;
@@ -128,6 +129,10 @@ public class EM00520 extends BaseApi implements IApi{
 			courseGradecompose.set("sort", 0);
 			courseGradecompose.set("percentage", newGradecomposeIdPercentageMap.get(gradecomposeId));
 			courseGradecompose.set("input_score_type", CcCourseGradecompose.DIRECT_INPUT_SCORE);
+			if(resultType == 2){
+				courseGradecompose.set("hierarchy_level", 5);
+			}
+
 			courseGradecompose.set("is_del", Boolean.FALSE);
 			newCourseGradecomposes.add(courseGradecompose);
 

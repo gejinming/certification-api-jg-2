@@ -13,6 +13,7 @@ import com.gnet.utils.DictUtils;
 import com.jfinal.kit.StrKit;
 import com.jfinal.plugin.activerecord.Page;
 import com.jfinal.plugin.activerecord.Record;
+import org.apache.bcel.generic.IF_ACMPEQ;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Component;
@@ -79,36 +80,67 @@ public class CcCourseGradecomposeDetailService {
 		}
 		
 		Map<Long, BigDecimal> scoreMap = Maps.newHashMap();
+		Map<Long, BigDecimal> scaleFactorMap = Maps.newHashMap();
 		for(CcCourseGradeComposeDetail temp: courseGradeComposeDetailList){
 			scoreMap.put(temp.getLong("indication_id"), temp.getBigDecimal("allScore"));
+			//TODO 2020.12.10针对评分表分析法增加题目的比例系数
+			BigDecimal allscaleFactor = temp.getBigDecimal("allscaleFactor");
+			if (allscaleFactor != null){
+				scaleFactorMap.put(temp.getLong("indication_id"), allscaleFactor);
+			}
 		}
 		//TODO 2020/07/10增加了题目批次，每个学生的课程目标成绩=ccCourseGradecomposeStudetails的成绩/包含这个课程目标批次的数量
 		//TODO 2020/09/02 改为每个学生的课程目标成绩=ccCourseGradecomposeStudetails的成绩/批次的数量
 		Pageable pageable = new Pageable(null, null);
 		Page<CcCourseGradecomposeBatch> batchList = CcCourseGradecomposeBatch.dao.page(pageable, courseGradecomposeId);
 		List<CcCourseGradecomposeBatch> batchLists = batchList.getList();
+        CcTeacherCourse teacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradecomposeId);
+        //达成度计算方式
+        Integer resultType = teacherCourse.getInt("result_type");
 
-
-
-		for(CcCourseGradecomposeIndication temp : courseGradecomposeIndicationList){
+        for(CcCourseGradecomposeIndication temp : courseGradecomposeIndicationList){
 			Long indicationId = temp.getLong("indication_id");
 			BigDecimal score = scoreMap.get(temp.getLong("indication_id"));
-
+			BigDecimal scaleFactor = scaleFactorMap.get(temp.getLong("indication_id"));
 			//1.判断是否存在批次
-			if (batchLists.size() != 0){
+			if (batchLists.size() != 0 && score !=null){
 				//2.查询包含这个课程目标的批次数量
 				//List<CcCourseGradecomposeDetailIndication> batchList1 = CcCourseGradecomposeDetailIndication.dao.findBatchList(indicationId, courseGradecomposeId);
 				int batchNum = batchLists.size();
 				//if (batchList1.size() !=0){
 					BigDecimal number = new BigDecimal(batchNum);
-					score = PriceUtils.div(score, number, 2);
+					//考核分析法
+					if (resultType.equals(CcTeacherCourse.RESULT_TYPE_SCORE)){
+                        if (score !=null){
+                            score = PriceUtils.div(score, number, 2);
+                        }
+                        //评分表分析法
+                    }else if (resultType.equals(CcTeacherCourse.RESULT_TYPE_EVALUATE) && scaleFactor !=null){
+					    //评分表分析法的课程目标满分计算方式是 比例系数 *等级制度的最大分/批次数量
+						CcCourse ccCourse = CcCourse.dao.findCourseMajor(teacherCourse.getLong("course_id"));
+						Long majorId = ccCourse.getLong("major_id");
+						CcRankingLevel ccRankingLevel = CcRankingLevel.dao.finLevelMaxScore(majorId, teacherCourse.getInt("hierarchy_level"));
+						//该专业等级制最大分
+						BigDecimal levelMaxScore = ccRankingLevel.getBigDecimal("score");
+						if (levelMaxScore ==null){
+							return ServiceResponse.error("获取等级制度为空，可能是没有设置考评点等级！ ");
+						}
+						 score = PriceUtils.mul(scaleFactor, levelMaxScore, 2);
+						score = PriceUtils.div(score, number, 2);
+                    }
+
+
+
 				//}
 			}
 			temp.set("modify_date", date);
 			temp.set("max_score", score);
+			if (scaleFactor != null){
+				temp.set("scale_factor", scaleFactor);
+			}
 		}
 		
-		if(!CcCourseGradecomposeIndication.dao.batchUpdate(courseGradecomposeIndicationList, "modify_date, max_score")){
+		if(!CcCourseGradecomposeIndication.dao.batchUpdate(courseGradecomposeIndicationList, "modify_date, max_score,scale_factor")){
 			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 			return ServiceResponse.error("批量更新开课课程指标点满分值失败 ");
 		}
@@ -163,7 +195,7 @@ public class CcCourseGradecomposeDetailService {
 				}
 			}
 		}
-		//TODO 2020/07/10增加了题目批次，每个学生的课程目标成绩=ccCourseGradecomposeStudetails的成绩/包含这个课程目标批次的数量
+		//TODO 2020/07/10增加了题目批次，每个学生的课程目标成绩=ccCourseGradecomposeStudetails的成绩/包含这个课程目标批次的数量2020.9.2改为除以批次数量
 		Pageable pageable = new Pageable(null, null);
 		Page<CcCourseGradecomposeBatch> batchList = CcCourseGradecomposeBatch.dao.page(pageable, courseGradeComposeId);
 		List<CcCourseGradecomposeBatch> batchLists = batchList.getList();
@@ -323,7 +355,7 @@ public class CcCourseGradecomposeDetailService {
 	 *                         开课课程下成绩组成
 	 * @return
 	 */
-	public RowDefinition getComposeDetailDefinition(Long courseGradeComposeId) {
+	public RowDefinition getComposeDetailDefinition(Long courseGradeComposeId,Integer resultType) {
 		//开课课程下成绩组成关联的课程目标
 		List<CcIndication> ccIndications = CcIndication.dao.findCourseGradeComposeId(courseGradeComposeId);
 		Integer size = ccIndications.size();
@@ -331,13 +363,22 @@ public class CcCourseGradecomposeDetailService {
 		Integer index = ccIndications.isEmpty() ? 0 : 1;
 
 		// ----------------------------------------- 处理head -----------------------------------
-		RowDefinition rowDefinition = new RowDefinition(size + 3);
+		int a=0;
+		if (resultType==2){
+			a=1;
+		}
+		RowDefinition rowDefinition = new RowDefinition(size + 3+a);
 
 		RowDefinition.ColumnDefinition no = RowDefinition.ColumnDefinition.createCommonColumn(0, DictUtils.findLabelByTypeAndKey("subjectImport", 1));
 		RowDefinition.ColumnDefinition score = RowDefinition.ColumnDefinition.createCommonColumn(1, DictUtils.findLabelByTypeAndKey("subjectImport", 2));
-		RowDefinition.ColumnDefinition detail = RowDefinition.ColumnDefinition.createCommonColumn(size + 2, DictUtils.findLabelByTypeAndKey("subjectImport", 4));
-		RowDefinition.ColumnDefinition remark = RowDefinition.ColumnDefinition.createCommonColumn(size + 3, DictUtils.findLabelByTypeAndKey("subjectImport", 5));
-		RowDefinition.ColumnDefinition de = RowDefinition.ColumnDefinition.createCommonColumn(size + 10, DictUtils.findLabelByTypeAndKey("subjectImport", 10));
+		//评分表分析法多一个比例系数
+		RowDefinition.ColumnDefinition scaleFactor  =RowDefinition.ColumnDefinition.createCommonColumn(2, DictUtils.findLabelByTypeAndKey("subjectImport", 6));;
+
+		RowDefinition.ColumnDefinition detail = RowDefinition.ColumnDefinition.createCommonColumn(size + 2+a, DictUtils.findLabelByTypeAndKey("subjectImport", 4));
+		RowDefinition.ColumnDefinition remark = RowDefinition.ColumnDefinition.createCommonColumn(size + 3+a, DictUtils.findLabelByTypeAndKey("subjectImport", 5));
+		RowDefinition.ColumnDefinition de = RowDefinition.ColumnDefinition.createCommonColumn(size + 10+a, DictUtils.findLabelByTypeAndKey("subjectImport", 10));
+
+
 		//课程目标不为空的时候才加入
 		if(!ccIndications.isEmpty()){
 			String[] indicationSort = new String[ccIndications.size()];
@@ -348,11 +389,12 @@ public class CcCourseGradecomposeDetailService {
 			RowDefinition.ValidateDefinition subGrade2Validate = new RowDefinition.ValidateDefinition(indicationSort);
 
 			RowDefinition.ColumnDefinition indication = RowDefinition.ColumnDefinition
-					.createGroupColumn(2, size + 1, DictUtils.findLabelByTypeAndKey("subjectImport", 3))
+					.createGroupColumn(2+a, size + 1+a, DictUtils.findLabelByTypeAndKey("subjectImport", 3))
 					.setIndexs(rowDefinition.getIndexs());
 
 			for(int i = 1; i <= size; i++ ){
-				((RowDefinition.GroupColumnDefinition) indication).addColumn(RowDefinition.ColumnDefinition.createCommonColumn(index + i, indicationSort[i-1]).setValidateDefinition(subGrade2Validate).setDataValidationDefinition(subGrade2Validate));
+				((RowDefinition.GroupColumnDefinition) indication).addColumn(RowDefinition.ColumnDefinition.createCommonColumn(index + i+a, indicationSort[i-1])
+						.setValidateDefinition(subGrade2Validate).setDataValidationDefinition(subGrade2Validate));
 			}
 			//rowDefinition.addColumn(subGrade2Validate)
 			rowDefinition.addColumn(indication);
@@ -362,7 +404,9 @@ public class CcCourseGradecomposeDetailService {
 		rowDefinition.addColumn(score);
 		rowDefinition.addColumn(detail);
 		rowDefinition.addColumn(remark);
-
+		if (resultType==2){
+			rowDefinition.addColumn(scaleFactor);
+		}
 		return rowDefinition;
 	}
 
@@ -408,7 +452,7 @@ public class CcCourseGradecomposeDetailService {
 	 * @param ccIndications
 	 * @return
 	 */
-	public boolean validateImportSubject(List<Map<String, Object>> subjects, List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails, Long courseGradeComposeId, Map<String, Long> indicationIdMap, List<CcCourseGradecomposeDetailIndication> ccCourseGradecomposeDetailIndications, List<String> ccIndications,Long batchId) {
+	public boolean validateImportSubject(List<Map<String, Object>> subjects, List<CcCourseGradeComposeDetail> ccCourseGradeComposeDetails, Long courseGradeComposeId, Map<String, Long> indicationIdMap, List<CcCourseGradecomposeDetailIndication> ccCourseGradecomposeDetailIndications, List<String> ccIndications,Long batchId,Integer resultType) {
 		Date date = new Date();
 		IdGenerate idGenerate = SpringContextHolder.getBean(IdGenerate.class);
         List<Map<String, Object>> errorList = Lists.newArrayList();
@@ -436,11 +480,13 @@ public class CcCourseGradecomposeDetailService {
 			String supportIndicationDic = DictUtils.findLabelByTypeAndKey("subjectImport", 3);
 			String detailDic = DictUtils.findLabelByTypeAndKey("subjectImport", 4);
 			String remarkDic = DictUtils.findLabelByTypeAndKey("subjectImport", 5);
-
+			//比例系数
+			String scaleFactors = DictUtils.findLabelByTypeAndKey("subjectImport", 6);
         	String no = resolveNo(ConvertUtils.convert(subject.get(noDic), String.class));
         	String score = ConvertUtils.convert(subject.get(scoreDic), String.class);
         	String detail = ConvertUtils.convert(subject.get(detailDic), String.class);
         	String remark = ConvertUtils.convert(subject.get(remarkDic), String.class);
+			String scaleFactor = ConvertUtils.convert(subject.get(scaleFactors), String.class);
 
         	if(StrKit.isBlank(no) || StrKit.isBlank(score)){
         		errorList.add(subject);
@@ -449,7 +495,13 @@ public class CcCourseGradecomposeDetailService {
 				reasons.add(String.format("excel中的第%s行的%s或%s为空", i + 3, noDic, scoreDic));
 				subject.put("reasons", reasons);
 			}
-
+			if (resultType==2 && StrKit.isBlank(scaleFactor)){
+				errorList.add(subject);
+				subject.put("isError", true);
+				List<String> reasons = ConvertUtils.convert(subject.get("reasons"), List.class);
+				reasons.add(String.format("excel中的第%s行的%s或%s为空", i + 3, noDic, scoreDic));
+				subject.put("reasons", reasons);
+			}
 			//分值必须是大于0小于1000且最多保留2位小数的正数
 			if(!isScoreLegal(score)){
 				errorList.add(subject);
@@ -498,6 +550,9 @@ public class CcCourseGradecomposeDetailService {
 			ccCourseGradeComposeDetail.set("is_del", false);
 			if (batchId != null ){
 				ccCourseGradeComposeDetail.set("batch_id", batchId);
+			}
+			if (resultType==2){
+				ccCourseGradeComposeDetail.set("scale_factor", scaleFactor);
 			}
 
 			ccCourseGradeComposeDetails.add(ccCourseGradeComposeDetail);

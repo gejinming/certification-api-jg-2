@@ -155,6 +155,7 @@ public class EM00684 extends BaseApi implements IApi {
                 ccTeacherCourse.put("planId", temp.get("plan_id"));
                 ccTeacherCourse.put("majorName", temp.get("major_name"));
                 ccTeacherCourse.put("grade", thisGrade);
+				ccTeacherCourse.put("enableGrade", temp.getInt("enable_grade"));
                 ccTeacherCourse.put("isSharer", temp.get("is_sharer"));
                 ccTeacherCourse.put("isShared", temp.get("is_shared"));
                 int i = 0;
@@ -229,7 +230,7 @@ public class EM00684 extends BaseApi implements IApi {
 		StringBuilder selectSql = new StringBuilder("select ctc.* ");
 		selectSql.append(", ct.name as teacher_name, cc.name as course_name ");
 		selectSql.append(", ctm.start_year term_start_year, ctm.end_year term_end_year, ctm.term term_num, ctm.term_type term_type");
-		selectSql.append(", cc.plan_id plan_id, so.name major_name, ce.educlass_name, ce.id educlassId, cc.code, cv.major_id,cc.course_type ");
+		selectSql.append(", cc.plan_id plan_id, so.name major_name, ce.educlass_name, ce.id educlassId, cc.code, cv.major_id,cv.enable_grade,cc.course_type ");
 		StringBuilder exceptSql = new StringBuilder("from " + CcTeacherCourse.dao.tableName + " ctc ");
 		exceptSql.append("left join " + CcTeacher.dao.tableName + " ct on ct.id=ctc.teacher_id ");
 		exceptSql.append("left join " + CcCourse.dao.tableName + " cc on cc.id=ctc.course_id ");

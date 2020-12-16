@@ -10,6 +10,7 @@ import com.gnet.model.admin.*;
 import com.gnet.pager.Pageable;
 import com.gnet.utils.DateUtil;
 import com.gnet.utils.PriceUtils;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.jfinal.plugin.activerecord.Page;
 import org.omg.CORBA.IRObject;
@@ -36,7 +37,6 @@ public class EM01206 extends BaseApi implements IApi {
 		Map<String, Object> returnMap = new HashMap<String, Object>();
 		// 教学班id
         // 导出类型 1导出报告2导出评价表
-        //Integer exportType=2;
         Long exportType = paramsLongFilter(params.get("exporterType"));
 		Long classId = paramsLongFilter(params.get("classId"));
 		if (classId==null || exportType==null){
@@ -121,7 +121,33 @@ public class EM01206 extends BaseApi implements IApi {
         if(finalIndictionScoreList==null){
             return renderFAIL("0085", response, header);
         }
-
+        ArrayList<HashMap<String, Object>> gradecomposeList = new ArrayList<>();
+        //成绩组成下的课程目标
+        List<CcCourseGradecomposeIndication> courseGradecomposeIndications = CcCourseGradecomposeIndication.dao.findByTeacherCourseIds(Lists.newArrayList(teacherCourseId));
+        ArrayList<Object> gradeconposeIndicationList = new ArrayList<>();
+        for (CcCourseGradecomposeIndication temp : courseGradecomposeIndications){
+            HashMap<String, Object> gradecomposeMap = new HashMap<>();
+            Long gradecomposeId = temp.getLong("gradecomposeId");
+            Long indicationId = temp.getLong("indication_id");
+            HashMap<Object, Object> map = new HashMap<>();
+            map.put("indicationId",temp.getLong("indication_id"));
+            map.put("gradecomposeId",gradecomposeId);
+            map.put("gradecomposeName",temp.getStr("name"));
+            gradecomposeMap.put("courseGradecomposeId",temp.getLong("courseGradecomposeId"));
+            gradecomposeMap.put("gradecomposeName",temp.getStr("name"));
+            if (!gradecomposeList.contains(gradecomposeMap)){
+                gradecomposeList.add(gradecomposeMap);
+            }
+            //细化的预期学习成果及实施准则和观测点
+            CcEduclassIndicationResult indicationResult = CcEduclassIndicationResult.dao.findIndicationResult(classId, indicationId, gradecomposeId);
+            if (indicationResult !=null){
+                String learnContent = indicationResult.getStr("learn_content");
+                String observeContent = indicationResult.getStr("observe_content");
+                map.put("learnContent",learnContent);
+                map.put("observeContent",observeContent);
+            }
+            gradeconposeIndicationList.add(map);
+        }
         //期末成绩的总分
         BigDecimal allIndicationScore = new BigDecimal("0");
         //期末成绩包含的课程目标和其占比
@@ -139,7 +165,10 @@ public class EM01206 extends BaseApi implements IApi {
                 for (CcCourseGradecomposeIndication temp : finalIndictionScoreList) {
                     //求出期末成绩总分
                     BigDecimal maxScore = temp.getBigDecimal("max_score");
-                    allIndicationScore = allIndicationScore.add(maxScore);
+                    if (maxScore !=null){
+                        allIndicationScore = allIndicationScore.add(maxScore);
+                    }
+
 
                 }
             }
@@ -149,7 +178,7 @@ public class EM01206 extends BaseApi implements IApi {
             //课程目标占比
             BigDecimal max = new BigDecimal("100");
             BigDecimal indicatMakeUp=new BigDecimal("0");
-            if (exportType==1){
+            if (exportType==1 && maxScore !=null){
                 //求出百分比  课程目标总分/期末总分*100
                 indicatMakeUp= PriceUtils.currency(maxScore.divide(allIndicationScore,4).multiply(max));
             }
@@ -160,16 +189,30 @@ public class EM01206 extends BaseApi implements IApi {
             map.put("sort",temps.get("sort"));
             map.put("content",temps.get("content"));
             map.put("indicatMakeUp",indicatMakeUps);
-            //行为/技能（分数）下的数据
+            //行为/技能（分数/题数）下的数据
             List<CcEduclassIndicationAnalyze> assessIndicationAnalyze = CcEduclassIndicationAnalyze.dao.findAssessIndicationAnalyze(classId, indicationId);
             if (assessIndicationAnalyze.size()>0){
+                //分数
                 map.put("oneContent",assessIndicationAnalyze.get(0).get("title_one_num"));
                 map.put("twoContent",assessIndicationAnalyze.get(0).get("title_two_num"));
+                //题数
+                //记忆题数
+                map.put("memoryNum",assessIndicationAnalyze.get(0).get("memory_num"));
+                //理解题数
+                map.put("understandNum",assessIndicationAnalyze.get(0).get("understand_num"));
+                //应用题数
+                map.put("applyNum",assessIndicationAnalyze.get(0).get("apply_num"));
+                //评价题数
+                map.put("assessNum",assessIndicationAnalyze.get(0).get("assess_num"));
+                //创造题数
+                map.put("createNum",assessIndicationAnalyze.get(0).get("create_num"));
+                //考核内容
+                map.put("checkContent",assessIndicationAnalyze.get(0).get("check_content"));
 
             }
             endTermIndicationList.add(map);
             //不等于0
-            if (!PriceUtils.eqThan(maxScore,new BigDecimal("0"))){
+            if (maxScore != null && !PriceUtils.eqThan(maxScore,new BigDecimal("0"))){
                 if (is==0){
                     indicationMarkUpString="目标"+temps.getInt("sort")+"分数占"+indicatMakeUps+"%";
                 }else {
@@ -341,6 +384,20 @@ public class EM01206 extends BaseApi implements IApi {
             achieveReportInfo.put("courseImprovement",achieveReport.getStr("course_improvement"));
             achieveReportInfo.put("assessRequire",achieveReport.getStr("assess_require"));
             achieveReportInfo.put("endPaper",achieveReport.getStr("end_paper"));
+            //需要反馈的问题
+            achieveReportInfo.put("problemContent",achieveReport.getStr("problem_content"));
+            //课程简介
+            achieveReportInfo.put("courseInfo",achieveReport.getStr("course_info"));
+            //教学方法
+            achieveReportInfo.put("teacherMothed",achieveReport.getStr("teacher_mothed"));
+            //评价方法
+            achieveReportInfo.put("assessMothed",achieveReport.getStr("assess_mothed"));
+            //试卷分析的一段文字
+            achieveReportInfo.put("testAnalysis",achieveReport.getStr("test_analysis"));
+            //细化可测评的课程学习目标（预期学习成果）
+            achieveReportInfo.put("courseLearTarget",achieveReport.getStr("course_lear_target"));
+            //针对个体的达成度评价分析
+            achieveReportInfo.put("personAchieveAnalyze",achieveReport.getStr("person_achieve_analyze"));
             //持续报告的时间
 
             String reportDate = achieveReport.getStr("report_date");
@@ -363,6 +420,25 @@ public class EM01206 extends BaseApi implements IApi {
             }
 
         }
+        //持续报告的一些图片B64
+        List<CccEduclassImages> educlassImages = CccEduclassImages.dao.findEduclassImages(classId);
+        ArrayList<Object> imageList = new ArrayList<>();
+        for (int i=0 ; i<educlassImages.size() ; i++){
+            HashMap<Object, Object> map = new HashMap<>();
+            CccEduclassImages temp = educlassImages.get(i);
+            String imageName = temp.getStr("image_name");
+            String imageB64 = temp.getStr("imageB64");
+            //输出到word中，排个序
+            String imageUrl ="rId"+(10+i);
+            String imageNameNo= "media/image"+i+".jpeg";
+            map.put("imageName",imageName);
+            map.put("imageB64",imageB64);
+            map.put("imageUrl",imageUrl);
+            map.put("imageNameNo",imageNameNo);
+            map.put("type",temp.getInt("type"));
+            imageList.add(map);
+
+        }
         returnMap.put("endTermTitleList",endTermTitleList);
         returnMap.put("courseAllIndication",courseAllIndicationList);
         returnMap.put("achieveReportInfo", achieveReportInfo);
@@ -377,7 +453,9 @@ public class EM01206 extends BaseApi implements IApi {
         returnMap.put("day", day);
         returnMap.put("indicationPointAndAceieveList",indicationPointAndAceieveList);
         returnMap.put("endTermIndicationList",endTermIndicationList);
-
+        returnMap.put("gradeconposeIndicationList",gradeconposeIndicationList);
+        returnMap.put("gradecomposeList",gradecomposeList);
+        returnMap.put("imageList",imageList);
 		// 结果返回
 		return renderSUC(returnMap, response, header);
 	}

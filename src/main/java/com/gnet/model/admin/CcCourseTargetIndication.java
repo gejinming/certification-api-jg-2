@@ -70,10 +70,15 @@ public class CcCourseTargetIndication extends DbModel<CcCourseTargetIndication> 
 		List<Object> params = new ArrayList<>();
 		StringBuilder sql = new StringBuilder("select ccti.*, cic.indication_id indicatorPointId from " + tableName + " ccti ");
 		sql.append("inner join " + CcIndicationCourse.dao.tableName + " cic on cic.id = ccti.indication_course_id ");
-		sql.append("where cic.is_del = ? and cic.indication_id = ? and cic.course_id=? ");
+		sql.append("where cic.is_del = ? and cic.course_id=? ");
 		params.add(DEL_NO);
-		params.add(indicatorPointId);
 		params.add(courseId);
+		if(indicatorPointId != null){
+			sql.append(" and cic.indication_id = ? ");
+			params.add(indicatorPointId);
+		}
+
+
 		return find(sql.toString(), params.toArray());
 	}
 }

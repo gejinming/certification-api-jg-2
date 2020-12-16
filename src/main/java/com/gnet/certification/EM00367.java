@@ -33,20 +33,25 @@ public class EM00367 extends BaseApi implements IApi {
 		
 		@SuppressWarnings("unchecked")
 		Map<String, Object> params = request.getData();
-		
-		//指标点、教学班
+
 		Long eduClazzId = paramsLongFilter(params.get("eduClazzId"));
-		Long indicationId = paramsLongFilter(params.get("indicationId"));
-		
+		Long courseGradecomposeId = paramsLongFilter(params.get("courseGradecomposeId"));
+		Long batchId = paramsLongFilter(params.get("batchId"));
 		if (eduClazzId == null) {
 			return renderFAIL("0500", response, header);
 		}
-		if (indicationId == null) {
-			return renderFAIL("0230", response, header);
+		if (courseGradecomposeId == null) {
+			return renderFAIL("0475", response, header);
 		}
-
+		/*Map<String, Object> searchParams = Maps.newHashMap();
+		searchParams.put("course_gradecompose_id", courseGradecomposeId);
+		searchParams.put("student_id", studentId);
+		if(batchId!=null){
+			searchParams.put("batch_id", batchId);
+		}*/
 		//根据教学班为条件获取
-		List<CcEduclassStudentStudy> educlassStudentStudies = CcEduclassStudentStudy.dao.findFilteredByColumn("class_id", eduClazzId);
+		//List<CcEduclassStudentStudy> educlassStudentStudies = CcEduclassStudentStudy.dao.findFilteredByColumn("class_id", eduClazzId);
+		List<CcEduclassStudentStudy> educlassStudentStudies = CcEduclassStudentStudy.dao.findCourseGradecomposeStud(courseGradecomposeId, eduClazzId, batchId);
 		List<Map<String, Object>> educlassStudentStudyList = new ArrayList<>();
 		for(CcEduclassStudentStudy temp : educlassStudentStudies) {
 			Map<String, Object> tempMap = Maps.newHashMap();
@@ -55,26 +60,24 @@ public class EM00367 extends BaseApi implements IApi {
 			tempMap.put("isRetake", temp.getBoolean("is_retake"));
 			educlassStudentStudyList.add(tempMap);
 		}
-				
-		//根据教学班和teacherCourseId为条件获取
-		List<CcStudentEvalute> studentEvaluteGradeList = CcStudentEvalute.dao.findEvaluteGradeByEduClazzIdAndIndicationId(eduClazzId, indicationId);
+		//TODO 2020.12.9改造评分表分析法
+		List<CcStudentEvalute> studentEvaluteGradeList = CcStudentEvalute.dao.findEvaluteGradeByEduClazzIdAndIndicationId(courseGradecomposeId, eduClazzId,batchId);
 		
 		// 返回结果
 		List<Map<String, Object>> list = Lists.newArrayList();
 		for (CcStudentEvalute temp: studentEvaluteGradeList){
 			Map<String, Object> ccStudent = Maps.newHashMap();
+			//select cs.id student_id, cess.remark , cess.is_retake, cs.student_no, cs.name student_name, cs.sex, cs.id_card,
+			// cs.address,crl.id levelId,crl.level_name ,crl.level,crl.score
 			ccStudent.put("id", temp.getLong("student_id"));
 			ccStudent.put("studentNo", temp.getStr("student_no"));
 			ccStudent.put("name", temp.getStr("student_name"));
 			ccStudent.put("sex", DictUtils.findLabelByTypeAndKey("sex", temp.getInt("sex"))); 
 			ccStudent.put("idCard", temp.getStr("id_card"));
 			ccStudent.put("address", temp.getStr("address"));
-			ccStudent.put("educlassId", temp.getLong("educlass_id"));
-			ccStudent.put("educlassName", temp.getStr("educlass_name"));
-			ccStudent.put("levelId", temp.getLong("level_id"));
+			ccStudent.put("levelId", temp.getLong("levelId"));
 			ccStudent.put("levelName", temp.getStr("level_name"));
-			ccStudent.put("evaluteId", temp.getLong("evalute_id"));
-			ccStudent.put("evaluteContent", temp.getStr("evalute_content"));
+			ccStudent.put("score", temp.getBigDecimal("score"));
 			list.add(ccStudent);
 		} 
 		

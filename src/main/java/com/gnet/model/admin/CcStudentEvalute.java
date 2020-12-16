@@ -259,34 +259,35 @@ public class CcStudentEvalute extends DbModel<CcStudentEvalute> {
 	
 	/**
 	 * 根据教学班编号和指标点编号查找学生考评点成绩
-	 * 
-	 * @param eduClazzId
-	 * @param indicationId
+	 *
+	 * @param courseGradecomposeId
+	 * @param eduClassId
 	 * @return
 	 */
-	public List<CcStudentEvalute> findEvaluteGradeByEduClazzIdAndIndicationId(Long eduClazzId, Long indicationId){
-		
-		StringBuilder sql = new StringBuilder("select cs.id student_id, cess.remark , cess.is_retake, cs.student_no, cs.name student_name, cs.sex, cs.id_card, cs.address, ce.id educlass_id, ce.educlass_name, cel.id level_id, cel.level_name, cee.id evalute_id, cee.content evalute_content from " + CcStudentEvalute.dao.tableName +" cse ");
+	public List<CcStudentEvalute> findEvaluteGradeByEduClazzIdAndIndicationId(Long courseGradecomposeId,Long eduClassId,Long batchId){
+		List<Object> params = Lists.newArrayList();
+		//TODO 2020.12.09改变考评点成绩得关联方式
+		StringBuilder sql = new StringBuilder("select cs.id student_id, cess.remark , cess.is_retake, cs.student_no, cs.name student_name, cs.sex, cs.id_card, cs.address,crl.id levelId,crl.level_name ,crl.level,crl.score  from " + CcStudentEvalute.dao.tableName +" cse ");
 		sql.append("inner join " + CcStudent.dao.tableName + " cs on cs.id = cse.student_id and cs.is_del = ? ");
 		sql.append("inner join " + CcEduclassStudent.dao.tableName + " ces on ces.student_id = cs.id and ces.is_del = ? and ces.class_id = ? ");
-		sql.append("left join " + CcEduclassStudentStudy.dao.tableName + " cess on cess.student_id = cs.id and cess.is_del = ? and cess.class_id = ? ");
-		sql.append("inner join " + CcEduclass.dao.tableName + " ce on ce.id = ces.class_id and ce.is_del = ? ");
+		sql.append("left join " + CcEduclassStudentStudy.dao.tableName + " cess on cess.student_id = cs.id and cess.is_del = ? and cess.course_gradecompose_id = ? ");
+		sql.append("inner join " +CcRankingLevel.dao.tableName + " crl on cse.evalute_id= crl.id ");
+		/*sql.append("inner join " + CcEduclass.dao.tableName + " ce on ce.id = ces.class_id and ce.is_del = ? ");
 		sql.append("inner join " + CcEvalute.dao.tableName + " cee on cee.id = cse.evalute_id and cee.is_del = ? and cee.indication_id = ? ");
-		sql.append("inner join " + CcEvaluteLevel.dao.tableName + " cel on cel.id = cse.level_id and cel.is_del = ? and cel.indication_id = ? ");
-		sql.append("where cse.is_del = ? ");
-		
-		List<Object> params = Lists.newArrayList();
+		sql.append("inner join " + CcEvaluteLevel.dao.tableName + " cel on cel.id = cse.level_id and cel.is_del = ? and cel.indication_id = ? ");*/
+		sql.append("where cse.is_del = ? and cse.course_gradecompose_id=? ");
+
 		params.add(Boolean.FALSE);
 		params.add(Boolean.FALSE);
-		params.add(eduClazzId);
+		params.add(eduClassId);
 		params.add(Boolean.FALSE);
-		params.add(eduClazzId);
+		params.add(courseGradecomposeId);
 		params.add(Boolean.FALSE);
-		params.add(Boolean.FALSE);
-		params.add(indicationId);
-		params.add(Boolean.FALSE);
-		params.add(indicationId);
-		params.add(Boolean.FALSE);
+		params.add(courseGradecomposeId);
+		if (batchId != null){
+			sql.append(" and cse.batch_id=? ");
+			params.add(batchId);
+		}
 		return find(sql.toString(), params.toArray());
 	}
 	
@@ -325,13 +326,22 @@ public class CcStudentEvalute extends DbModel<CcStudentEvalute> {
 	 * @author SY 
 	 * @version 创建时间：2016年12月21日 下午4:12:53 
 	 */
-	public Boolean deleteAllByEvaluteIdAndStuedntId(Long evaluteId, Long studentId, Date date) {
+	public Boolean deleteAllByEvaluteIdAndStuedntId(Long courseGradecomposeId, Long studentId, Date date,Long batchId) {
 		int result;
 		if (getTable().hasColumnLabel(IS_DEL_LABEL)) {
-			result = Db.update("update " + tableName + " set is_del=?, modify_date=? where evalute_id = ? and student_id = ? ", Boolean.TRUE, date, evaluteId, studentId);
+			if (batchId == null){
+				result = Db.update("update " + tableName + " set is_del=?, modify_date=? where course_gradecompose_id = ? and student_id = ? ", Boolean.TRUE, date, courseGradecomposeId, studentId);
+			}else {
+				result = Db.update("update " + tableName + " set is_del=?, modify_date=? where course_gradecompose_id = ? and student_id = ? and batch_id=?  ", Boolean.TRUE, date, courseGradecomposeId, studentId,batchId);
+			}
+
 		} else {
-			result = Db.update("delete from " + tableName + " where evalute_id = ? and student_id = ? ", evaluteId, studentId);
-		}
+			if (batchId == null) {
+				result = Db.update("delete from " + tableName + " where course_gradecompose_id = ? and student_id = ? ", courseGradecomposeId, studentId);
+			}else{
+				result = Db.update("delete from " + tableName + " where course_gradecompose_id = ? and student_id = ? and batch_id=? ", courseGradecomposeId, studentId,batchId);
+			}
+			}
 		return result >= 0;
 	}
 

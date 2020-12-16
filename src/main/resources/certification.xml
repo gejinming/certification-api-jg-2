@@ -70,6 +70,7 @@
             <key value="3" label="支持课程目标" />
             <key value="4" label="题目详情" />
             <key value="5" label="备注" />
+            <key value="6" label="比例系数" />
         </dic>
 
         <dic type="subjectScoreImport" name="题目成绩导入模板">

@@ -36,7 +36,8 @@ public class EM00281 extends BaseApi implements IApi {
 		Long studentId = paramsLongFilter(param.get("studentId"));
 		Integer remark = paramsIntegerFilter(param.get("remark"));
 		Boolean isRetake = paramsBooleanFilter(param.get("isRetake"));
-		
+		Long courseGradecomposeId = paramsLongFilter(param.get("courseGradecomposeId"));
+		Long batchId = paramsLongFilter(param.get("batchId"));
 		if(eduClassId == null){
 			return renderFAIL("0380", response, header);
 		}
@@ -44,12 +45,18 @@ public class EM00281 extends BaseApi implements IApi {
 		if(studentId == null){
 			return renderFAIL("0330", response, header);
 		}
-
+		if( courseGradecomposeId == null) {
+			return renderFAIL("1009", response, header, "courseGradecomposeId的参数值非法");
+		}
 		Boolean isSuccess = Boolean.TRUE;
 		Date date = new Date();
 		Map<String, Object> paras = new HashMap<>();
 		paras.put("class_id", eduClassId);
 		paras.put("student_id", studentId);
+		paras.put("course_gradecompose_id", courseGradecomposeId);
+		if (batchId!=null){
+			paras.put("batch_id", batchId);
+		}
 		CcEduclassStudentStudy ccEduclassStudentStudy = CcEduclassStudentStudy.dao.findFirstByColumn(paras, Boolean.TRUE);
 		if(ccEduclassStudentStudy == null) {
 			// 新增
@@ -61,6 +68,8 @@ public class EM00281 extends BaseApi implements IApi {
 			ccEduclassStudentStudy.set("modify_date", date);
 			ccEduclassStudentStudy.set("student_id", studentId);
 			ccEduclassStudentStudy.set("class_id", eduClassId);
+			ccEduclassStudentStudy.set("course_gradecompose_id", courseGradecomposeId);
+			ccEduclassStudentStudy.set("batch_id", batchId);
 			ccEduclassStudentStudy.set("remark", remark);
 			ccEduclassStudentStudy.set("is_retake", isRetake);
 			ccEduclassStudentStudy.set("is_del", CcEduclassStudentStudy.DEL_NO);

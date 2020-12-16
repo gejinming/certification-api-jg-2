@@ -93,6 +93,9 @@ public class EM01222 extends BaseApi implements IApi {
             " span {\n" +
             "    padding-left:2em;\n" +
             " }\n" +
+            " img {\n" +
+            "    max-width:100%;\n" +
+            " }\n" +
             "</style>\n" +
             "</head>\n" +
             "<body>";

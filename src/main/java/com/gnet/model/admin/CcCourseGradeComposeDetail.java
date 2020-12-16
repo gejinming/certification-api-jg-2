@@ -149,7 +149,7 @@ public class CcCourseGradeComposeDetail extends DbModel<CcCourseGradeComposeDeta
 	 */
 	public List<CcCourseGradeComposeDetail> findByCourseGradeComposeId(Long courseGradecomposeId, Long[] indicationIds, Long courseGradecomposeDetailId) {
 		List<Object> param = Lists.newArrayList();
-		StringBuilder sql = new StringBuilder("select ccgd.course_gradecompose_id, ccgdi.indication_id, sum(ccgd.score) allScore, ccgi.max_score, "
+		StringBuilder sql = new StringBuilder("select ccgd.course_gradecompose_id, ccgdi.indication_id, sum(ccgd.score) allScore,sum(ccgd.scale_factor) allscaleFactor, ccgi.max_score, "
 				+ " cg.name gradecomposeName, ci.sort indicationSort, ci.content from " + tableName + " ccgd ");
 		sql.append("left join " + CcCourseGradecompose.dao.tableName + " ccg on ccg.id = ccgd.course_gradecompose_id ");
 		sql.append("left join "  + CcCourseGradecomposeDetailIndication.dao.tableName + " ccgdi on ccgdi.course_gradecompose_detail_id = ccgd.id ");
@@ -215,4 +215,5 @@ public class CcCourseGradeComposeDetail extends DbModel<CcCourseGradeComposeDeta
 		return find(sql.toString(), param.toArray());
 
 	}
+
 }

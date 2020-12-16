@@ -42,7 +42,6 @@ import com.jfinal.log.Logger;
  */
 @Transactional(readOnly = false)
 @Service("EM00741")
-@Deprecated
 public class EM00741 extends BaseApi implements IApi {
 	
 	private static final Logger logger = Logger.getLogger(EM00741.class);
@@ -60,7 +59,7 @@ public class EM00741 extends BaseApi implements IApi {
 		Object fileInfoObject = param.get("fileInfo");
 		FileInfo fileInfo = (FileInfo) fileInfoObject;
 		Map<String, Object> result = Maps.newHashMap();
-		
+		Long courseGradeComposeId = paramsLongFilter(param.get("courseGradeComposeId"));
 		Long eduClassId = paramsLongFilter(param.get("eduClassId"));
 		// 教学班编号为空过滤
 		if (eduClassId == null) {

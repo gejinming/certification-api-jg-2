@@ -50,6 +50,13 @@ public class EM01211 extends BaseApi implements IApi {
 			result.put("reportDate",achieveReport.getStr("report_date"));
 			result.put("assessDate",achieveReport.getStr("assess_date"));
 			result.put("endPaper",achieveReport.getStr("end_paper"));
+			result.put("problemContent",achieveReport.getStr("problem_content"));
+			result.put("courseInfo",achieveReport.getStr("course_info"));
+			result.put("teacherMothed",achieveReport.getStr("teacher_mothed"));
+			result.put("assessMothed",achieveReport.getStr("assess_mothed"));
+			result.put("testAnalysis",achieveReport.getStr("test_analysis"));
+			result.put("courseLearTarget",achieveReport.getStr("course_lear_target"));
+			result.put("personAchieveAnalyze",achieveReport.getStr("person_achieve_analyze"));
 		}
 
 		List<CcEduclassAssessReport> assessReportList = CcEduclassAssessReport.dao.findAssessReport(edclessId, null,null);

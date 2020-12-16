@@ -5,6 +5,7 @@ import com.gnet.pager.Pageable;
 import com.gnet.plugin.id.IdGenerate;
 import com.gnet.utils.PriceUtils;
 import com.gnet.utils.SpringContextHolder;
+import com.jfinal.log.Logger;
 import com.jfinal.plugin.activerecord.Page;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -120,9 +121,15 @@ public class CcCourseGradecompBatchService {
         List<CcCourseGradecomposeIndication> updateList = new ArrayList<>();
         List<CcCourseGradecomposeIndication> addList = new ArrayList<>();
         Date date = new Date();
+        CcTeacherCourse teacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradeComposeId);
+        //达成度计算类型
+        Integer resultType = teacherCourse.getInt("result_type");
         for (CcCourseGradecomposeBatchIndication temp:batchIndicationScore){
             Long indicationId = temp.getLong("indication_id");
             BigDecimal score = temp.getBigDecimal("score");
+            //比例系数
+            BigDecimal scaleFactor = temp.getBigDecimal("scaleFactor");
+
             //TODO 2020/9/2改为除以批次数量
             // 进行分页
             Pageable pageable = new Pageable(null, null);
@@ -131,16 +138,40 @@ public class CcCourseGradecompBatchService {
             //查询包含此课程目标的批次数量
            // List<CcCourseGradecomposeBatchIndication> ccCourseGradecomposeBatchIndications = CcCourseGradecomposeBatchIndication.dao.indicationBatchList(courseGradeComposeId, indicationId);
             int batchNum=batchsList.size();
-            if (batchNum !=0 && !score.equals(null) && !score.equals("")) {
-                //成绩组成的课程目标总分=score/batchNum
+            if (batchNum !=0 ) {
+
                 BigDecimal number = new BigDecimal(batchNum);
-                BigDecimal divideScore = PriceUtils.div(score, number, 2);
                 CcCourseGradecomposeIndication ccCourseGradecomposeIndication = new CcCourseGradecomposeIndication();
+                //评分表分析法 改用比例系数 成绩组成的课程目标比例系数=scaleFactor/batchNum
+                if (resultType==2){
+                    if (scaleFactor!=null && !scaleFactor.equals("")){
+
+                        BigDecimal dividescaleFactor = PriceUtils.div(scaleFactor, number, 2);
+                        ccCourseGradecomposeIndication.put("scale_factor",dividescaleFactor);
+                        CcCourse ccCourse = CcCourse.dao.findCourseMajor(teacherCourse.getLong("course_id"));
+                        Long majorId = ccCourse.getLong("major_id");
+                        CcRankingLevel ccRankingLevel = CcRankingLevel.dao.finLevelMaxScore(majorId, teacherCourse.getInt("hierarchy_level"));
+                        //等级制最大分
+                        BigDecimal maxscore = ccRankingLevel.getBigDecimal("score");
+                        if (maxscore==null){
+                            return false;
+                        }
+                        //成绩组成的课程目标总分=比例系数*等级制最大分/批次数量
+                        ccCourseGradecomposeIndication.set("max_score",PriceUtils.div(PriceUtils.mul(scaleFactor,maxscore,2),number,2) );
+                    }
+                }else{
+                    //成绩组成的课程目标总分=score/batchNum
+                    if (score!=null && !score.equals("")){
+                        BigDecimal divideScore = PriceUtils.div(score, number, 2);
+                        ccCourseGradecomposeIndication.put("max_score",divideScore);
+                    }
+
+                }
                 ccCourseGradecomposeIndication.put("create_date",date);
                 ccCourseGradecomposeIndication.put("modify_date",date);
                 ccCourseGradecomposeIndication.put("indication_id",indicationId);
                 ccCourseGradecomposeIndication.put("course_gradecompose_id",courseGradeComposeId);
-                ccCourseGradecomposeIndication.put("max_score",divideScore);
+
 
                 //判断是否存在
                 CcCourseGradecomposeIndication gradecomposeIndication = CcCourseGradecomposeIndication.dao.findGradecomposeIndication(courseGradeComposeId, indicationId);
@@ -163,7 +194,7 @@ public class CcCourseGradecompBatchService {
         }
         if (!updateList.isEmpty()){
 
-            if (!CcCourseGradecomposeIndication.dao.batchUpdate(updateList,"modify_date,max_score")){
+            if (!CcCourseGradecomposeIndication.dao.batchUpdate(updateList,"modify_date,max_score,scale_factor")){
 
                 return false;
             }

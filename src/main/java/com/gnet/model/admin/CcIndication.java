@@ -54,9 +54,16 @@ public class CcIndication extends DbModel<CcIndication> {
 	 * @param courseId
 	 * @return
 	 */
-	public Page<CcIndication> page(Pageable pageable, Long courseId) {
+	public Page<CcIndication> page(Pageable pageable, Long courseId,Integer state) {
+
 		StringBuilder exceptSql = new StringBuilder("from " + tableName + " ci ");
 		exceptSql.append("inner join " + CcCourse.dao.tableName + " cc on cc.id = ci.course_id ");
+		if (state!=null){
+            //TODO 2020.12.10改动 只要关联到指标点的课程目标
+            exceptSql.append("inner join cc_course_target_indication cti on cti.indication_id=ci.id "  );
+            exceptSql.append("inner join cc_indication_course cic on cic.id=cti.indication_course_id "  );
+        }
+
 		List<Object> params = Lists.newArrayList();
 
 		exceptSql.append("and cc.is_del = ? ");
@@ -75,7 +82,7 @@ public class CcIndication extends DbModel<CcIndication> {
 			exceptSql.append("order by ci.sort asc ");
 		}
 
-		return CcIndication.dao.paginate(pageable, "select ci.*, cc.name courseName ", exceptSql.toString(), params.toArray());
+		return CcIndication.dao.paginate(pageable, "select distinct ci.*, cc.name courseName ", exceptSql.toString(), params.toArray());
 	}
 
 	/**

@@ -57,7 +57,8 @@ public class EM00810 extends BaseApi implements IApi {
         }
 
         Map<String, Object> returnMap = new HashMap<String, Object>();
-        Page<CcIndication> page = CcIndication.dao.page(pageable, courseId);
+        //这里改动了下只要指标点关联得课程目标
+        Page<CcIndication> page = CcIndication.dao.page(pageable, courseId,1);
         List<CcIndication> ccIndicationList = page.getList();
 
         // 判断是否分页

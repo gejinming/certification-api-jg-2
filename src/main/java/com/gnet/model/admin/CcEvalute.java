@@ -289,7 +289,7 @@ public class CcEvalute extends DbModel<CcEvalute> {
 		List<Object> params = Lists.newArrayList();
 		StringBuilder sql = new StringBuilder("select cge.index_num graduateIndexNum, cet.type evalute_type, ci.id indication_id, ci.index_num index_num, ci.content content, ci.remark remark, cic.weight indication_weight, ce.index_num evalute_index_num, ce.content evalute_content, ce.remark evalute_remark from " + CcEvalute.dao.tableName + " ce ");		
 		sql.append("inner join cc_educlass ces on ces.teacher_course_id = ce.teacher_course_id and ces.id = ? ");
-		sql.append("inner join cc_indication ci on ci.id = ce.indication_id ");
+		sql.append("inner join cc_indicator_point ci on ci.id = ce.indication_id ");
 		sql.append("inner join " + CcEvaluteType.dao.tableName + " cet on cet.id = ce.evalute_type_id and cet.is_del = ? ");
 		sql.append("left join " + CcGraduate.dao.tableName + " cge on cge.id = ci.graduate_id ");
 		sql.append("left join cc_indication_course cic on cic.indication_id = ci.id and cic.course_id = ? ");
@@ -366,11 +366,11 @@ public class CcEvalute extends DbModel<CcEvalute> {
 		List<Object> params = Lists.newArrayList();
 		StringBuilder sql = new StringBuilder("select ce.* from " + CcEvalute.dao.tableName + " ce ");
 		sql.append("inner join cc_indication ci on ci.id = ce.indication_id ");
-		sql.append("left join " + CcGraduate.dao.tableName + " cg on cg.id = ci.graduate_id ");
+		//sql.append("left join " + CcGraduate.dao.tableName + " cg on cg.id = ci.graduate_id ");
 		sql.append("where ce.teacher_course_id = ? and ce.is_del = ? ");
 		params.add(teacherCourseId);
 		params.add(DEL_NO);
-		sql.append("order by cg.index_num asc, ci.index_num asc, ce.index_num asc");
+		//sql.append("order by ci.index_num asc, ce.index_num asc");
 		
 		return find(sql.toString(), params.toArray());
 	}

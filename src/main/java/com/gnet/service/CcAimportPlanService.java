@@ -403,7 +403,7 @@ public class CcAimportPlanService {
             }
             if (courseInfo.get("课程名称")!=null){
                  courseName = courseInfo.get("课程名称").toString();
-                 if (courseName.length()>15){
+                 if (courseName.length()>60){
                      return Result.error("错误："+courseName+"的课程名称太长，请检查！");
                  }
                 ccCourse.set("name",courseName);
@@ -414,7 +414,7 @@ public class CcAimportPlanService {
             }
             if (courseInfo.get("英文名称")!=null){
                 String englishName = courseInfo.get("英文名称").toString();
-                if (englishName.length()>40){
+                if (englishName.length()>150){
                     return Result.error("错误："+courseName+"的英文名称太长，请检查！");
                 }
                 ccCourse.set("english_name",englishName);

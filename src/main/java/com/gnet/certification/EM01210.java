@@ -5,20 +5,14 @@ import com.gnet.api.Response;
 import com.gnet.api.ResponseHeader;
 import com.gnet.api.service.BaseApi;
 import com.gnet.api.service.IApi;
-import com.gnet.model.admin.CcEduclassAchieveReport;
-import com.gnet.model.admin.CcEduclassAssessReport;
-import com.gnet.model.admin.CcEduclassIndicationAnalyze;
-import com.gnet.model.admin.CcEduclassIndicationTitle;
+import com.gnet.model.admin.*;
 import com.gnet.plugin.id.IdGenerate;
 import com.gnet.utils.ConvertUtils;
 import com.gnet.utils.SpringContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @program: certification-api-jg-2
@@ -46,12 +40,31 @@ public class EM01210 extends BaseApi implements IApi {
         String problemModified = paramsStringFilter(param.get("problemModified"));
         String reportDate = paramsStringFilter(param.get("reportDate"));
         String endPaper = paramsStringFilter(param.get("endPaper"));
+        //TODO 20201123 改变持续报告输出版本增加以下字段
+        //需要反馈的问题
+        String problemContent = paramsStringFilter(param.get("problemContent"));
+        //课程简介（17版）
+        String courseInfo = paramsStringFilter(param.get("courseInfo"));
+        //教学方法（17版）
+        String teacherMothed = paramsStringFilter(param.get("teacherMothed"));
+        //评价方法
+        String assessMothed = paramsStringFilter(param.get("assessMothed"));
+        //试卷分析的一段文字
+        String testAnalysis = paramsStringFilter(param.get("testAnalysis"));
+        //细化可测评的课程学习目标（预期学习成果）(17)
+        String courseLearTarget = paramsStringFilter(param.get("courseLearTarget"));
+        //针对个体的达成度评价分析(17)
+        String personAchieveAnalyze = paramsStringFilter(param.get("personAchieveAnalyze"));
         //持续报告里期末试卷设计行为/技能（分数）下的标题
         List<Map<String, Object>> endTermList = ConvertUtils.convert(param.get("endTermList"), List.class);
         List<Map<String, Object>> endTermIndicationDataList = ConvertUtils.convert(param.get("endTermIndicationDataList"), List.class);
+        //课程学习成果评估表数据
+        List<Map<String, Object>> indicationAssessResult = ConvertUtils.convert(param.get("indicationAssessResult"), List.class);
+        //课程目标的一些转成B64编码的图片
+        List<Map<String, Object>> indicationImagesList = ConvertUtils.convert(param.get("indicationImages"), List.class);
         //课程目标分析
         List<Map<String, Object>> indicationAnalyzeList = ConvertUtils.convert(param.get("indicationAnalyzeList"), List.class);
-        if (inputType==1 ){
+        /*if (inputType==1 ){
             if (targetRequire==null){
                 return renderFAIL("2561", response, header);
             }
@@ -67,7 +80,7 @@ public class EM01210 extends BaseApi implements IApi {
             if (problemModified==null){
                 return renderFAIL("2565", response, header);
             }
-        }
+        }*/
         //---------评价表录入内容
         String achieveResult = paramsStringFilter(param.get("achieveResult"));
         String assessDocunment = paramsStringFilter(param.get("assessDocunment"));
@@ -121,6 +134,14 @@ public class EM01210 extends BaseApi implements IApi {
             ccEduclassAchieveReport.set("assess_date", assessDate);
             ccEduclassAchieveReport.set("report_date", reportDate);
             ccEduclassAchieveReport.set("is_del", Boolean.FALSE);
+
+            ccEduclassAchieveReport.set("problem_content", problemContent);
+            ccEduclassAchieveReport.set("course_info", courseInfo);
+            ccEduclassAchieveReport.set("teacher_mothed", teacherMothed);
+            ccEduclassAchieveReport.set("assess_mothed", assessMothed);
+            ccEduclassAchieveReport.set("test_analysis", testAnalysis);
+            ccEduclassAchieveReport.set("course_lear_target", courseLearTarget);
+            ccEduclassAchieveReport.set("person_achieve_analyze", personAchieveAnalyze);
             isExists=1;
         }else {
            //修改的数据要分类，避免被覆盖
@@ -132,6 +153,13 @@ public class EM01210 extends BaseApi implements IApi {
                 achieveReport.set("teach_modified", teachModified);
                 achieveReport.set("problem_modified", problemModified);
                 achieveReport.set("report_date", reportDate);
+                achieveReport.set("problem_content", problemContent);
+                achieveReport.set("course_info", courseInfo);
+                achieveReport.set("teacher_mothed", teacherMothed);
+                achieveReport.set("assess_mothed", assessMothed);
+                achieveReport.set("test_analysis", testAnalysis);
+                achieveReport.set("course_lear_target", courseLearTarget);
+                achieveReport.set("person_achieve_analyze", personAchieveAnalyze);
 
             } else {
                 achieveReport.set("achieve_result", achieveResult);
@@ -238,6 +266,7 @@ public class EM01210 extends BaseApi implements IApi {
         //---------期末试卷设计行为/技能（分数）下的标题列--------------
         ArrayList<CcEduclassIndicationTitle> updatTitle = new ArrayList<>();
         ArrayList<CcEduclassIndicationTitle> addTitle = new ArrayList<>();
+        //17版的不需要这个标题，先留着吧
         if (endTermList !=null){
             for (int i=0;i<endTermList.size();i++){
                 CcEduclassIndicationTitle ccEduclassIndicationTitle = new CcEduclassIndicationTitle();
@@ -286,6 +315,13 @@ public class EM01210 extends BaseApi implements IApi {
                 ccEduclassIndicationAnalyze.put("is_del",Boolean.FALSE);
                 String oneContent = indicationTitleData.get("oneContent")+"";
                 String twoContent = indicationTitleData.get("twoContent")+"";
+                String memoryNum = indicationTitleData.get("memoryNum")+"";
+                String understandNum = indicationTitleData.get("understandNum")+"";
+                String applyNum = indicationTitleData.get("applyNum")+"";
+                String assessNum = indicationTitleData.get("assessNum")+"";
+                String createNum = indicationTitleData.get("createNum")+"";
+                String checkContent = indicationTitleData.get("checkContent")+"";
+
                 if (oneContent!="" && oneContent !=null && !"".equals(oneContent)){
                     ccEduclassIndicationAnalyze.put("title_one_num",indicationTitleData.get("oneContent"));
                 }
@@ -293,6 +329,12 @@ public class EM01210 extends BaseApi implements IApi {
                     ccEduclassIndicationAnalyze.put("title_two_num",indicationTitleData.get("twoContent"));
                 }
 
+                ccEduclassIndicationAnalyze.put("memory_num",indicationTitleData.get("memoryNum"));
+                ccEduclassIndicationAnalyze.put("understand_num",indicationTitleData.get("understandNum"));
+                ccEduclassIndicationAnalyze.put("apply_num",indicationTitleData.get("applyNum"));
+                ccEduclassIndicationAnalyze.put("assess_num",indicationTitleData.get("assessNum"));
+                ccEduclassIndicationAnalyze.put("create_num",indicationTitleData.get("createNum"));
+                ccEduclassIndicationAnalyze.put("check_content",indicationTitleData.get("checkContent"));
 
                 if (assessIndicationAnalyze.size()==0){
                     ccEduclassIndicationAnalyze.put("id",idGenerate.getNextValue());
@@ -310,7 +352,97 @@ public class EM01210 extends BaseApi implements IApi {
             return renderSUC(result, response, header);
         }
 
-        if(!updatIndicationTitleData.isEmpty() && !CcEduclassIndicationAnalyze.dao.batchUpdate(updatIndicationTitleData, "title_one_num,title_two_num")){
+        if(!updatIndicationTitleData.isEmpty() && !CcEduclassIndicationAnalyze.dao.batchUpdate(updatIndicationTitleData, "title_one_num,title_two_num,memory_num,understand_num,apply_num,assess_num,create_num,check_content")){
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            result.put("isSuccess", false);
+            return renderSUC(result, response, header);
+        }
+        //课程学习成果评估表数据处理
+        ArrayList<CcEduclassIndicationResult> updatIndicationResult = new ArrayList<>();
+        ArrayList<CcEduclassIndicationResult> addIndicationResult = new ArrayList<>();
+        if (indicationAssessResult != null){
+            for (int i=0; i<indicationAssessResult.size();i++){
+                Map<String, Object> indiacationAssessMap = indicationAssessResult.get(i);
+                Long indicationId = Long.valueOf(String.valueOf(indiacationAssessMap.get("indicationId")));
+                //Long gradecomposeId = Long.valueOf(String.valueOf(indiacationAssessMap.get("gradecomposeId")));
+                if (indicationId==null){
+                    return renderFAIL("1111", response, header);
+                }
+                String learnContent = indiacationAssessMap.get("learnContent") + "";
+                //《成绩组成ID，观测点内容》
+                List<Map<String, Object>> indicationObserveContent = ConvertUtils.convert(indiacationAssessMap.get("indicationObserveContent"), List.class);
+                for (int j =0; j<indicationObserveContent.size();j++){
+                    CcEduclassIndicationResult ccEduclassIndicationResult = new CcEduclassIndicationResult();
+                    Map<String, Object> indicationObserveContentMap = indicationObserveContent.get(j);
+                    Long gradecomposeId = Long.valueOf(String.valueOf(indicationObserveContentMap.get("gradecomposeId")));
+                    if (gradecomposeId==null){
+                        return renderFAIL("0120", response, header);
+                    }
+                    String observeContent = indicationObserveContentMap.get("observeContent") + "";
+                    CcEduclassIndicationResult indicationResult = CcEduclassIndicationResult.dao.findIndicationResult(edclassId, indicationId, gradecomposeId);
+
+                    if (indicationResult == null){
+                        ccEduclassIndicationResult.put("class_id",edclassId);
+                        ccEduclassIndicationResult.put("indication_id",indicationId);
+                        ccEduclassIndicationResult.put("gradecompose_id",gradecomposeId);
+                        ccEduclassIndicationResult.put("learn_content",learnContent);
+                        ccEduclassIndicationResult.put("observe_content",observeContent);
+                        ccEduclassIndicationResult.put("id",idGenerate.getNextValue());
+                        addIndicationResult.add(ccEduclassIndicationResult);
+                    }else{
+                        indicationResult.put("learn_content",learnContent);
+                        indicationResult.put("observe_content",observeContent);
+                        updatIndicationResult.add(indicationResult);
+                    }
+
+                }
+
+
+
+            }
+        }
+        if(!addIndicationResult.isEmpty() && !CcEduclassIndicationResult.dao.batchSave(addIndicationResult)){
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            result.put("isSuccess", false);
+            return renderSUC(result, response, header);
+        }
+
+        if(!updatIndicationResult.isEmpty() && !CcEduclassIndicationResult.dao.batchUpdate(updatIndicationResult, "learn_content,observe_content")){
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            result.put("isSuccess", false);
+            return renderSUC(result, response, header);
+        }
+        ArrayList<CccEduclassImages> imagesArrayList = new ArrayList<>();
+        if( indicationImagesList !=null){
+            //图片处理
+            for (int i=0;i<indicationImagesList.size();i++){
+                CccEduclassImages cccEduclassImages = new CccEduclassImages();
+                Map<String, Object> imageMap = indicationImagesList.get(i);
+                String imageName = imageMap.get("imageName")+"";
+                Object imageB64 = imageMap.get("imageB64");
+                Object type = imageMap.get("type");
+                cccEduclassImages.put("image_name",imageName);
+                cccEduclassImages.put("imageB64",imageB64);
+                cccEduclassImages.put("class_id",edclassId);
+                if (type==null){
+                    return renderFAIL("2579", response, header);
+                }
+                cccEduclassImages.put("type",type);
+                cccEduclassImages.put("id",idGenerate.getNextValue());
+                imagesArrayList.add(cccEduclassImages);
+            }
+            //先删除旧的图片数据
+            if (!imagesArrayList.isEmpty()){
+                if (!CccEduclassImages.dao.deleteAllByColumn("class_id",edclassId,new Date())){
+                    TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                    result.put("isSuccess", false);
+                    return renderSUC(result, response, header);
+                }
+            }
+        }
+
+        //新增
+        if(!imagesArrayList.isEmpty() && !CccEduclassImages.dao.batchSave(imagesArrayList)){
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             result.put("isSuccess", false);
             return renderSUC(result, response, header);

@@ -44,7 +44,7 @@ public class CcCourseGradecomposeDetailIndication extends DbModel<CcCourseGradec
 	 */
 	public  List<CcCourseGradecomposeDetailIndication> getIndictionScore(List<Long> batchIds){
 		List<Object> param = Lists.newArrayList();
-		StringBuilder sql = new StringBuilder("select sum(b.score) score,a.indication_id,batch_id,c.content indicationContent,c.sort indicationSort from " + tableName + " a ");
+		StringBuilder sql = new StringBuilder("select sum(b.score) score,sum(b.scale_factor) scaleFactor,a.indication_id,batch_id,c.content indicationContent,c.sort indicationSort from " + tableName + " a ");
 		sql.append("inner join cc_course_gradecompose_detail b on b.id=a.course_gradecompose_detail_id and b.is_del=? ");
 		param.add(DEL_NO);
 		sql.append("inner join cc_indication c on c.id=a.indication_id and c.is_del=? ");

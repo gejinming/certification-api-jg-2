@@ -622,6 +622,21 @@ public class CcScoreStuIndigrade extends DbModel<CcScoreStuIndigrade> {
 		sql.append(")");
 		return Db.update(sql.toString(), params.toArray()) >= 0;
 	}
+	/*
+	 * @param gradecomposeIndicationIdList
+	 * @return boolean
+	 * @author Gejm
+	 * @description: 根据开课课程成绩组成元素与课程目标关联清空成绩
+	 * @date 2020/12/10 16:58
+	 */
+	public boolean deleAllGradecomposeScore(List<Long> gradecomposeIndicationIdList){
+		if(gradecomposeIndicationIdList == null || gradecomposeIndicationIdList.isEmpty()) {
+			return true;
+		}
+		StringBuilder sql = new StringBuilder("update " + tableName + " cssi ");
+		sql.append("set cssi.is_del=1 where cssi.gradecompose_indication_id in (" + CollectionKit.convert(gradecomposeIndicationIdList, ",") + ") ");
+		return Db.update(sql.toString()) >= 0;
+	}
 
 	/**
 	 * 清空这些开课课程组成存在学生成绩

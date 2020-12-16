@@ -62,6 +62,7 @@ public class EM00411 extends BaseApi implements IApi  {
 		map.put("score", temp.get("score"));
 		map.put("detail", temp.get("detail"));
 		map.put("remark", temp.get("remark"));
+		map.put("scaleFactor", temp.get("scale_factor"));
 		map.put("courseGradecomposeId", temp.get("course_gradecompose_id"));
 		map.put("indicationIdArray", indicationIdList.toArray(new Long[indicationIdList.size()]));
 		

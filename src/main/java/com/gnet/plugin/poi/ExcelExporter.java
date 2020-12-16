@@ -32,6 +32,7 @@ public class ExcelExporter {
         exportToExcel(depth, rowDefinition, excelExporterDataProcessor, targetFile, "1.若不得分或得0分请填0。2.得分最多只保留小数点后2位。",1);
     }
 
+
     /**
      * 导出定义到excel文件，注意，文件必须为xls后缀
      *
@@ -151,11 +152,11 @@ public class ExcelExporter {
                     value = item.get(j);
                 }
 
-                // 判断是否有body列的约束条件，有的话检查值
+               /* // 判断是否有body列的约束条件，有的话检查值
                 RowDefinition.ValidateDefinition dataValidateDefinition = columnDefinition.getDataValidationDefinition();
                 if (dataValidateDefinition != null && !dataValidateDefinition.check(value)) {
                     throw new ExcelException(String.format("The value %s is not passed by data validation %s", value, dataValidateDefinition.checksToString()));
-                }
+                }*/
 
                 dataCell.setCellValue(value);
                 dataCell.setCellStyle(styles.get("cell"));

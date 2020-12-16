@@ -66,10 +66,10 @@ public class EM00552 extends BaseApi implements IApi {
 		// 分析法判断
 		Map<String, Object> studentInfo = null;
 		Map<Long, Object> indicatorPointInfo = null;
-//		Date statisticsDate = null;
+		Date statisticsDate = null;
 		Boolean needUpdate = null;
-		
-		if (CcTeacherCourse.RESULT_TYPE_SCORE.equals(ccTeacherCourse.getInt("result_type"))||CcTeacherCourse.RESULT_TYPE_SCORE2.equals(ccTeacherCourse.getInt("result_type"))) {
+		Map<Long, Object> indicationInfo = null;
+		//if (CcTeacherCourse.RESULT_TYPE_SCORE.equals(ccTeacherCourse.getInt("result_type"))||CcTeacherCourse.RESULT_TYPE_SCORE2.equals(ccTeacherCourse.getInt("result_type"))) {
 			// 考核分析法数据获取
 			studentInfo = getStudentInfoScore(eduClassId, isCaculate);
 			// 如果是剔除
@@ -84,27 +84,27 @@ public class EM00552 extends BaseApi implements IApi {
 //			needUpdate = statisticsDate == null ? CcScoreStuIndigrade.dao.isExistStudentGrades(eduClassId, indicationId) : needToUpdateScore(eduClassId);
 			needUpdate = needToUpdateScore(eduClassId);
 			
-		} else if (CcTeacherCourse.RESULT_TYPE_EVALUATE.equals(ccTeacherCourse.getInt("result_type"))) {
+		/*} else if (CcTeacherCourse.RESULT_TYPE_EVALUATE.equals(ccTeacherCourse.getInt("result_type"))) {
 //			// 评分表分析法数据获取
-//			studentInfo = getStudentInfoEvalute(eduClassId);
-//			indicationInfo = getIndicationInfoEvalute(ccTeacherCourse.getLong("course_id"), eduClassId, indicationId);
-//			// 最近一次统计时间
-//			statisticsDate = getLastStatisticsDateEvalute(eduClassId);
-//			// 有记录变动建议重新生成报表
-//			needUpdate = statisticsDate == null ? CcStudentEvalute.dao.isExistStudentGrades(eduClassId, indicationId) : needToUpdateEvalute(eduClassId);
-			return renderFAIL("0502", response, header);
+			studentInfo = getStudentInfoEvalute(eduClassId);
+			indicationInfo = getIndicationInfoEvalute(ccTeacherCourse.getLong("course_id"), eduClassId, indicatorPointId);
+			// 最近一次统计时间
+			statisticsDate = getLastStatisticsDateEvalute(eduClassId);
+			// 有记录变动建议重新生成报表
+			needUpdate = statisticsDate == null ? CcStudentEvalute.dao.isExistStudentGrades(eduClassId, indicatorPointId) : needToUpdateEvalute(eduClassId);
+			//return renderFAIL("0502", response, header);
 		} else {
 			return renderFAIL("0502", response, header);
-		}
+		}*/
 		
 		// 返回结果
 		Map<String, Object> result = Maps.newHashMap();
 		result.put("studentInfo", studentInfo);
 		result.put("indicatorPointInfo", indicatorPointInfo);
-//		result.put("indicationInfo", indicationInfo);
-//		result.put("statisticsDate", statisticsDate);
+		result.put("indicationInfo", indicationInfo);
+		result.put("statisticsDate", statisticsDate);
 		result.put("needUpdate", needUpdate);
-		result.put("resultType", ccTeacherCourse.getInt("result_type"));
+		result.put("resultType", 1);
 		result.put("resultTypeName", DictUtils.findLabelByTypeAndKey("courseResultType", ccTeacherCourse.getInt("result_type")));
 		return renderSUC(result, response, header);
 	}
@@ -930,7 +930,6 @@ public class EM00552 extends BaseApi implements IApi {
 	 * @param targetIndicationId
 	 * @return
 	 */
-	@Deprecated
 	@SuppressWarnings("unchecked")
 	private Map<Long, Object> getIndicationInfoEvalute(Long courseId, Long eduClassId, Long targetIndicationId) {
 		List<CcReportEduclassEvalute> ccReportEduclassEvalutes = CcReportEduclassEvalute.dao.findAllByCourseId(courseId, eduClassId, targetIndicationId);

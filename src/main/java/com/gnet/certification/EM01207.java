@@ -113,13 +113,21 @@ public class EM01207 extends BaseApi implements IApi {
         }
         String courseName = educlassById.getStr("courseName");
         String educlassName = educlassById.getStr("educlass_name");
+        //启用年级
+        Integer enableGrade = educlassById.getInt("enable_grade");
         //引用模板
         String TEMPLATE_FILE_NAME = "";
         if (exporterType == 2){
             TEMPLATE_FILE_NAME="courseAchievementEvaluation.ftl";
             name=courseName+"-"+"课程目标和毕业要求指标点达成度评价表";
         }else{
-            TEMPLATE_FILE_NAME = "courseReport.ftl";
+            //启用年级2017之后用新版本持续报告
+            if (enableGrade>=2017){
+                TEMPLATE_FILE_NAME = "courseReport17.ftl";
+            }else{
+                TEMPLATE_FILE_NAME = "courseReport.ftl";
+            }
+
             name=courseName+"("+educlassName+")"+"达成度评价与持续改进报告";
         }
 
@@ -220,7 +228,9 @@ public class EM01207 extends BaseApi implements IApi {
                     if ("targetRequire".equals(name) || "achieveAnalysis".equals(name)
                             || "problemModified".equals(name) || "teachModified".equals(name)
                             || "achieveResult".equals(name)  || "courseModified".equals(name)
-                            || "courseImprovement".equals(name) ) {
+                            || "courseImprovement".equals(name) || "problemContent".equals(name)
+                            || "courseInfo".equals(name) || "teacherMothed".equals(name) || "assessMothed".equals(name)
+                            || "testAnalysis".equals(name) || "courseLearTarget".equals(name) || "personAchieveAnalyze".equals(name)) {
                         return parseText(content);
                     }
 

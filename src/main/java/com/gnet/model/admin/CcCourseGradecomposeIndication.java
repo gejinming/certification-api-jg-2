@@ -594,10 +594,12 @@ public class CcCourseGradecomposeIndication extends DbModel<CcCourseGradecompose
 	 * @return
 	 */
 	public List<CcCourseGradecomposeIndication> findByTeacherCourseIds(List<Long> teacherCourseIds) {
-		StringBuilder sql = new StringBuilder("select ccgi.*, ctc.id  teacherCourseId from " + tableName + " ccgi ");
+		StringBuilder sql = new StringBuilder("select ccgi.*, ctc.id  teacherCourseId ,cg.name,cg.id gradecomposeId,ccg.id courseGradecomposeId from " + tableName + " ccgi ");
 		sql.append("inner join " + CcCourseGradecompose.dao.tableName + " ccg on ccgi.course_gradecompose_id = ccg.id and ccg.is_del = ? ");
 		sql.append("inner join " + CcTeacherCourse.dao.tableName + " ctc on ccg.teacher_course_id = ctc.id and ctc.is_del = ? and ctc.id in (" + CollectionKit.convert(teacherCourseIds, ",") + ") ");
+		sql.append("inner join " + CcGradecompose.dao.tableName + " cg on cg.id= ccg.gradecompose_id and cg.is_del=0 ");
 		sql.append("where ccgi.is_del = ? ");
+		sql.append("order by ccgi.indication_id,cg.id ");
 		return find(sql.toString(), Boolean.FALSE, Boolean.FALSE, Boolean.FALSE);
 	}
 
@@ -687,6 +689,11 @@ public class CcCourseGradecomposeIndication extends DbModel<CcCourseGradecompose
 		params.add(gradeComposeId);
 
 		return findFirst(sql.toString(),params.toArray());
+
+	}
+	public List<CcCourseGradecomposeIndication> findcCourseGradecomposeIndicationList(Long courseGradeComposeId){
+		StringBuilder sql = new StringBuilder("select * from cc_course_gradecompose_indication where course_gradecompose_id =? and is_del=0 ");
+		return find(sql.toString(),courseGradeComposeId);
 
 	}
 }

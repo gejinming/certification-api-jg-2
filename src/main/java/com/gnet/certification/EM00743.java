@@ -26,7 +26,7 @@ import java.util.Map;
 
 
 /**
- * 考核成绩分析法教学班学生批量成绩录入Excel模板下载
+ * 考核成绩分析法和评价表分析法教学班学生批量成绩录入Excel模板下载
  *
  * @author SY
  * @Date 2017年10月6日
@@ -81,12 +81,11 @@ public class EM00743 extends BaseApi implements IApi {
         String name = ccTeacherCourse.getStr("name");
         // 判断是否是考核成绩法，不是就直接返回。教师开课类型,1:考核成绩分析法，2：评分表分析法 3: 财经大学考核成绩分析法
         Integer resultType = ccTeacherCourse.getInt("result_type");
-        if(!CcTeacherCourse.RESULT_TYPE_SCORE.equals(resultType) && !CcTeacherCourse.RESULT_TYPE_SCORE2.equals(resultType)) {
+       /* if(!CcTeacherCourse.RESULT_TYPE_SCORE.equals(resultType) && !CcTeacherCourse.RESULT_TYPE_SCORE2.equals(resultType)) {
             return renderFAIL("1009", response, header, "课程类型必须为：考核成绩分析法。");
-        }
+        }*/
 
         List<File> fileList = Lists.newArrayList();
-
         String zipFileUrl = PathKit.getWebRootPath() + ConfigUtils.getStr("excel", "createPath") + "学生成绩导入模板-" + name+"-"+educlassName + ".zip";
 
         //获取文件
@@ -144,7 +143,7 @@ public class EM00743 extends BaseApi implements IApi {
                     //}, "/Users/xuqiang/Work/temp/output2.xls");
                 } else {
                     // 评分表
-                    RowDefinition rowDefinition = ccStudentService.getEvaluateDefinition(ccTeacherCourse, startNaturalColumnIndex);
+                    RowDefinition rowDefinition = ccStudentService.getEvaluateDefinition(ccTeacherCourse, startNaturalColumnIndex,courseGradeComposeId);
 
                     ExcelExporter.exportToExcel(3, rowDefinition, new ExcelExporter.ExcelExporterDataProcessor() {
                         @Override

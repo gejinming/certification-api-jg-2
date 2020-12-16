@@ -35,7 +35,7 @@ public class CcEduclass extends DbModel<CcEduclass> {
 	 * @return
 	 */
 	public CcEduclass findEduclassById(Long educlassId) {
-		StringBuilder exceptSql = new StringBuilder("select ctc.id teacherCourseId,cv.id versionId, cv.major_id majorId, ce.*, count(ces.id) studentNum,cc.id courseId, cc.name courseName, ct.name teacherName,ct.major_id, cc.code courseCode, cc.id courseId, ctc.result_type, ctc.grade grade ," +
+		StringBuilder exceptSql = new StringBuilder("select ctc.id teacherCourseId,cv.id versionId, cv.major_id majorId,cv.enable_grade, ce.*, count(ces.id) studentNum,cc.id courseId, cc.name courseName, ct.name teacherName,ct.major_id, cc.code courseCode, cc.id courseId, ctc.result_type, ctc.grade grade ," +
 				"cc.credit, cc.all_hours,ctm.start_year,ctm.end_year,ctm.term,ctm.term_type,cc.team_leader from " + CcEduclass.dao.tableName + " ce ");
 		exceptSql.append("left join " + CcTeacherCourse.dao.tableName + " ctc on ctc.id = ce.teacher_course_id ");
 		exceptSql.append("left join " + CcTeacher.dao.tableName + " ct on ct.id = ctc.teacher_id ");

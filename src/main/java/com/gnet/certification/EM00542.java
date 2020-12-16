@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.gnet.model.admin.*;
+import com.gnet.service.CcstudentRaningLeveService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -15,10 +17,6 @@ import com.gnet.api.Response;
 import com.gnet.api.ResponseHeader;
 import com.gnet.api.service.BaseApi;
 import com.gnet.api.service.IApi;
-import com.gnet.model.admin.CcCourseGradecompose;
-import com.gnet.model.admin.CcCourseGradecomposeIndication;
-import com.gnet.model.admin.CcEduclass;
-import com.gnet.model.admin.CcGradecomposeIndicationScoreRemark;
 import com.gnet.response.ServiceResponse;
 import com.gnet.service.CcEduindicationStuScoreService;
 import com.gnet.service.CcGradecomposeIndicationScoreRemarkService;
@@ -52,8 +50,12 @@ public class EM00542 extends BaseApi implements IApi{
 		BigDecimal weight = paramsBigDecimalFilter(param.get("weight"));
 		BigDecimal maxScore = paramsBigDecimalFilter(param.get("maxScore"));
 		List<HashMap> scoreSectionRemarks = paramsJSONArrayFilter(param.get("scoreSectionRemarks"), HashMap.class);
-		
-		if(id == null){
+		CcTeacherCourse teacherCourse = CcTeacherCourse.dao.findByCourseGradeComposeId(courseGradecomposeId);
+		//达成度计算类型
+		Integer resultType = teacherCourse.getInt("result_type");
+		Integer inputType = teacherCourse.getInt("input_score_type");
+		Long educlassIds = teacherCourse.getLong("educlassId");
+		if(id == null || resultType == null){
 			return renderFAIL("0496", response, header);
 		}
 		if(weight == null){
@@ -119,7 +121,35 @@ public class EM00542 extends BaseApi implements IApi{
 	    courseGradecomposeIndication.set("indication_id", indicationId);
 	    courseGradecomposeIndication.set("course_gradecompose_id", courseGradecomposeId);
 	    courseGradecomposeIndication.set("weight", weight);
-	    courseGradecomposeIndication.set("max_score", maxScore);
+	    //如果达成度计算类型为评分表分析那maxScore传的就是比例系数
+		if (resultType == 1){
+			courseGradecomposeIndication.set("max_score", maxScore);
+		}else{
+			//判断比例系数是否大于0小于1
+			if(PriceUtils.greaterThan(CcCourseGradecomposeIndication.MIN_WEIGHT, maxScore) || PriceUtils.greaterThan(maxScore, CcCourseGradecomposeIndication.MAX_WEIGHT)){
+				return renderFAIL("0376", response, header);
+			}
+			//直接录入类型的是直接写比例系数的，其他的需要统计，更新课程目标的满分值是在EM01237计算的
+			if (inputType==1){
+				//判断比例系数是否大于0小于1
+				if(PriceUtils.greaterThan(CcCourseGradecomposeIndication.MIN_WEIGHT, maxScore) || PriceUtils.greaterThan(maxScore, CcCourseGradecomposeIndication.MAX_WEIGHT)){
+					return renderFAIL("0376", response, header);
+				}
+				//如果达成度计算类型为评分表分析那maxScore传的就是比例系数
+				courseGradecomposeIndication.set("scale_factor", maxScore);
+				//课程目标满分计算方式是 比例系数*等级制度的最大分
+				CcCourse ccCourse = CcCourse.dao.findCourseMajor(teacherCourse.getLong("course_id"));
+				Long majorId = ccCourse.getLong("major_id");
+				CcRankingLevel ccRankingLevel = CcRankingLevel.dao.finLevelMaxScore(majorId, teacherCourse.getInt("hierarchy_level"));
+				//等级制最大分
+				BigDecimal score = ccRankingLevel.getBigDecimal("score");
+				if (score==null){
+					return renderFAIL("2586", response, header);
+				}
+				courseGradecomposeIndication.set("max_score",PriceUtils.mul(score,maxScore,2) );
+			}
+		}
+
 	    
 	    Map<String, Boolean> result = new HashMap<>();
 		if(!courseGradecomposeIndication.update()){
@@ -140,6 +170,15 @@ public class EM00542 extends BaseApi implements IApi{
 			if(!serviceResponse.isSucc()){
 				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 				return renderFAIL("0960", response, header, serviceResponse.getContent());
+			}
+		}
+		//评分表分析法
+		if (resultType==2){
+			//更新了比例就要重新计算成绩
+			CcstudentRaningLeveService cstudentRaningLeveService = SpringContextHolder.getBean(CcstudentRaningLeveService.class);
+			ServiceResponse serviceResponse = cstudentRaningLeveService.mangeRaningLeveScore(courseGradecomposeId,inputType,educlassIds,null);
+			if(!serviceResponse.isSucc()){
+				return renderFAIL("0804", response, header, serviceResponse.getContent());
 			}
 		}
 

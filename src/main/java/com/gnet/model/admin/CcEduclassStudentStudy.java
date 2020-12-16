@@ -3,6 +3,9 @@ package com.gnet.model.admin;
 import com.gnet.model.DbModel;
 import com.gnet.plugin.tablebind.TableBind;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * @type model
  * @description 学生教学班学习情况表操作，包括对数据的增删改查与列表
@@ -41,4 +44,18 @@ public class CcEduclassStudentStudy extends DbModel<CcEduclassStudentStudy> {
 	 * 重修标记：是
 	 */
 	public static Boolean RETAKE_TRUE = Boolean.TRUE;
+
+
+	public List<CcEduclassStudentStudy> findCourseGradecomposeStud(Long courseGradecomposeId, Long classId, Long batchId){
+		ArrayList<Object> params = new ArrayList<>();
+		StringBuilder sql = new StringBuilder("select * from " + tableName + " where course_gradecompose_id=? and class_id=? ");
+		params.add(courseGradecomposeId);
+		params.add(classId);
+		if (batchId != null){
+			sql.append("and batch_id = ?");
+			params.add(batchId);
+		}
+
+		return find(sql.toString(),params.toArray());
+	}
 }

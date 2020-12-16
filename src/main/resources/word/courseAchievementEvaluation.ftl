@@ -2603,7 +2603,7 @@
                                 <w:bCs/>
                                 <w:szCs w:val="21"/>
                             </w:rPr>
-                            <w:t>专业负责人签名：</w:t>
+                            <w:t>专业负责人签名：[#if data.educlassCourseInfo.majorName?? ]${data.educlassCourseInfo.majorName}[/#if]</w:t>
                         </w:r>
                         <w:r w:rsidRPr="003F630F">
                             <w:rPr>
