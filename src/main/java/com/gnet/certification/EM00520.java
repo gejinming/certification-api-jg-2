@@ -51,6 +51,9 @@ public class EM00520 extends BaseApi implements IApi{
 		//达成度分析类型
 		Integer resultType = paramsIntegerFilter(param.get("resultType"));
 		Integer allPercentage = 0;
+		if( resultType == null){
+			return renderFAIL("0496", response, header);
+		}
 		//成绩组成元素编号
 		List<Long> gradecomposeIds = new ArrayList<>();;
 		Map<Long, Integer> newGradecomposeIdPercentageMap = new HashMap<>();

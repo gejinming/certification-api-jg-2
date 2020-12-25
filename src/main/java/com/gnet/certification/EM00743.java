@@ -87,32 +87,28 @@ public class EM00743 extends BaseApi implements IApi {
 
         List<File> fileList = Lists.newArrayList();
         String zipFileUrl = PathKit.getWebRootPath() + ConfigUtils.getStr("excel", "createPath") + "学生成绩导入模板-" + name+"-"+educlassName + ".zip";
+        if(CcTeacherCourse.RESULT_TYPE_SCORE == resultType || CcTeacherCourse.RESULT_TYPE_SCORE2 == resultType) {
+            //获取文件
+            for (Long courseGradeComposeId : courseGradeComposeIds) {
 
-        //获取文件
-        for (Long courseGradeComposeId : courseGradeComposeIds) {
+                CcCourseGradecompose gradecomposeDetail = CcCourseGradecompose.dao.findDetailById(courseGradeComposeId);
+                //成绩组成名称
+                String gradecomposeName = gradecomposeDetail.getStr("gradecomposeName");
 
-            CcCourseGradecompose gradecomposeDetail = CcCourseGradecompose.dao.findDetailById(courseGradeComposeId);
-            //成绩组成名称
-            String gradecomposeName = gradecomposeDetail.getStr("gradecomposeName");
+                //        String title = "注意：1.名单要求从第3行开始录入（例如：姓名为林木）2.学号以文本形式填写（左上角应该有个绿色三角才对）";
+                String fileUrl = PathKit.getWebRootPath() + ConfigUtils.getStr("excel", "createPath");
+                String exportUrl = PathKit.getWebRootPath() + ConfigUtils.getStr("excel", "createPath") + "学生成绩导入模板-" + name + "-" + gradecomposeName + "-" + batchName + "-" + educlassName + ".xls";
 
-            //        String title = "注意：1.名单要求从第3行开始录入（例如：姓名为林木）2.学号以文本形式填写（左上角应该有个绿色三角才对）";
-//        	String exportUrl = "F://_Use_One//output//student"+new Date().getTime()+".xls";
-            String fileUrl = PathKit.getWebRootPath() + ConfigUtils.getStr("excel", "createPath");
-            String exportUrl = PathKit.getWebRootPath() + ConfigUtils.getStr("excel", "createPath") + "学生成绩导入模板-" + name+"-"+gradecomposeName+"-"+batchName+"-"+educlassName + ".xls";
-
-            try {
-                // 判断是否存在路径，不存在就创建
-                File dir = new File(fileUrl);
-                if (!dir.exists()) {
-                    dir.mkdirs();
-                }
-                // 而外参数是从第几列开始的
-                Integer startNaturalColumnIndex = 5;
-//    			// 而外参数是从第几行开始的
-//    			Integer startNaturalRowIndex = 1;
-                if(CcTeacherCourse.RESULT_TYPE_SCORE == resultType || CcTeacherCourse.RESULT_TYPE_SCORE2 == resultType) {
+                try {
+                    // 判断是否存在路径，不存在就创建
+                    File dir = new File(fileUrl);
+                    if (!dir.exists()) {
+                        dir.mkdirs();
+                    }
+                    // 而外参数是从第几列开始的
+                    Integer startNaturalColumnIndex = 5;
                     // 考核
-                    RowDefinition rowDefinition = ccStudentService.getSingleScoreDefinition(ccTeacherCourse, courseGradeComposeId, startNaturalColumnIndex,batchId);
+                    RowDefinition rowDefinition = ccStudentService.getSingleScoreDefinition(ccTeacherCourse, courseGradeComposeId, startNaturalColumnIndex, batchId);
 
                     ExcelExporter.exportToExcel(2, rowDefinition, new ExcelExporter.ExcelExporterDataProcessor() {
                         @Override
@@ -124,12 +120,12 @@ public class EM00743 extends BaseApi implements IApi {
 
                             List<CcStudent> studentList = CcStudent.dao.findByEduclassIdOrderByStudentNo(eduClassId);
 
-                            for(int i = 0; i < studentList.size();) {
+                            for (int i = 0; i < studentList.size(); ) {
                                 CcStudent temp = studentList.get(i);
                                 List<String> data1 = new ArrayList<>();
                                 i++;
                                 temp.put("index", i);
-                                data1.add(i+"");
+                                data1.add(i + "");
                                 data1.add(temp.getStr("student_no"));
                                 data1.add(temp.getStr("name"));
                                 data1.add(educlassName);
@@ -141,44 +137,66 @@ public class EM00743 extends BaseApi implements IApi {
                         }
                     }, exportUrl);
                     //}, "/Users/xuqiang/Work/temp/output2.xls");
-                } else {
-                    // 评分表
-                    RowDefinition rowDefinition = ccStudentService.getEvaluateDefinition(ccTeacherCourse, startNaturalColumnIndex,courseGradeComposeId);
 
-                    ExcelExporter.exportToExcel(3, rowDefinition, new ExcelExporter.ExcelExporterDataProcessor() {
-                        @Override
-                        public List<List<String>> invoke() {
-                            List<List<String>> result = new ArrayList<>();
-
-                            CcEduclass ccEduclass = CcEduclass.dao.findFilteredById(eduClassId);
-                            String educlassName = ccEduclass.getStr("educlass_name");
-
-                            List<CcStudent> studentList = CcStudent.dao.findByEduclassIdOrderByStudentNo(eduClassId);
-
-                            for(int i = 0; i < studentList.size();) {
-                                CcStudent temp = studentList.get(i);
-                                List<String> data1 = new ArrayList<>();
-                                i++;
-                                temp.put("index", i);
-                                data1.add(i+"");
-                                data1.add(temp.getStr("student_no"));
-                                data1.add(temp.getStr("name"));
-                                data1.add(educlassName);
-
-                                result.add(data1);
-                            }
-                            return result;
-                        }
-                    }, exportUrl);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    if (logger.isErrorEnabled()) {
+                        logger.error("生成成绩录入模版失败", e);
+                    }
+                    continue;
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+                fileList.add(new File(exportUrl));
+            }
+        }
+        // 评分表
+        if (resultType==2){
+            String fileUrl = PathKit.getWebRootPath() + ConfigUtils.getStr("excel", "createPath");
+            String exportUrl = PathKit.getWebRootPath() + ConfigUtils.getStr("excel", "createPath") + "学生成绩导入模板-" + name+"-"+"-"+"-"+educlassName + ".xls";
+
+            try {
+                // 判断是否存在路径，不存在就创建
+                File dir = new File(fileUrl);
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+                // 而外参数是从第几列开始的
+                Integer startNaturalColumnIndex = 5;
+
+            RowDefinition rowDefinition = ccStudentService.getEvaluateDefinition(ccTeacherCourse, startNaturalColumnIndex,courseGradeComposeIds,batchId);
+
+            ExcelExporter.exportToExcel(2, rowDefinition, new ExcelExporter.ExcelExporterDataProcessor() {
+                @Override
+                public List<List<String>> invoke() {
+                    List<List<String>> result = new ArrayList<>();
+
+                    CcEduclass ccEduclass = CcEduclass.dao.findFilteredById(eduClassId);
+                    String educlassName = ccEduclass.getStr("educlass_name");
+
+                    List<CcStudent> studentList = CcStudent.dao.findByEduclassIdOrderByStudentNo(eduClassId);
+
+                    for(int i = 0; i < studentList.size();) {
+                        CcStudent temp = studentList.get(i);
+                        List<String> data1 = new ArrayList<>();
+                        i++;
+                        temp.put("index", i);
+                        data1.add(i+"");
+                        data1.add(temp.getStr("student_no"));
+                        data1.add(temp.getStr("name"));
+                        data1.add(educlassName);
+
+                        result.add(data1);
+                    }
+                    return result;
+                }
+            }, exportUrl,"考评点成绩下拉选择",1);
+            fileList.add(new File(exportUrl));
+        }  catch (Exception e) {
+            e.printStackTrace();
                 if (logger.isErrorEnabled()) {
                     logger.error("生成成绩录入模版失败", e);
                 }
-                continue;
             }
-            fileList.add(new File(exportUrl));
+
         }
 
         if (fileList.isEmpty()) {

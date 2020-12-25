@@ -61,13 +61,11 @@ public class EM00412 extends BaseApi implements IApi{
 		if (StrKit.isBlank(name)) {
 			return renderFAIL("0452", response, header);
 		}
-		if (score == null) {
+		/*if (score == null) {
 			return renderFAIL("0453", response, header);
-		}
+		}*/
 
-		if(PriceUtils.isZero(score)){
-			return renderFAIL("1130", response, header);
-		}
+
 
 		if (courseGradecomposeId == null) {
 			return renderFAIL("0455", response, header);
@@ -106,7 +104,6 @@ public class EM00412 extends BaseApi implements IApi{
 		ccCourseGradeComposeDetail.set("create_date", date);
 		ccCourseGradeComposeDetail.set("modify_date", date);
 		ccCourseGradeComposeDetail.set("name", name);
-		ccCourseGradeComposeDetail.set("score", score);
 		ccCourseGradeComposeDetail.set("detail", detail);
 		ccCourseGradeComposeDetail.set("remark", remark);
 		ccCourseGradeComposeDetail.set("weight", weight);
@@ -120,7 +117,26 @@ public class EM00412 extends BaseApi implements IApi{
 			if(PriceUtils.greaterThan(CcCourseGradecomposeIndication.MIN_WEIGHT, scaleFactor) || PriceUtils.greaterThan(scaleFactor, CcCourseGradecomposeIndication.MAX_WEIGHT)){
 				return renderFAIL("0376", response, header);
 			}
+			CcCourse ccCourse = CcCourse.dao.findCourseMajor(teacherCourse.getLong("course_id"));
+			Long majorId = ccCourse.getLong("major_id");
+			CcRankingLevel ccRankingLevel = CcRankingLevel.dao.finLevelMaxScore(majorId, teacherCourse.getInt("hierarchy_level"));
+			//等级制最大分
+			BigDecimal maxScore = ccRankingLevel.getBigDecimal("score");
+			if (maxScore==null){
+				return renderFAIL("2586", response, header);
+			}
+			//题目分数=等级制最大分*比例系数
+			BigDecimal score0 = PriceUtils.mul(maxScore, scaleFactor);
+			ccCourseGradeComposeDetail.set("score", score0);
 			ccCourseGradeComposeDetail.set("scale_factor", scaleFactor);
+		}else{
+			if(PriceUtils.isZero(score)){
+				return renderFAIL("1130", response, header);
+			}
+			if (score == null) {
+				return renderFAIL("0453", response, header);
+			}
+			ccCourseGradeComposeDetail.set("score", score);
 		}
 
 		//batchId说明是批次的题目

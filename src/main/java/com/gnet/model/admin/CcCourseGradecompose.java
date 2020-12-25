@@ -153,7 +153,20 @@ public class CcCourseGradecompose extends DbModel<CcCourseGradecompose> {
 		sql.append("order by ccg.sort asc");
 		return find(sql.toString(), DEL_NO, teacherCourseId, DEL_NO);
 	}
-	
+
+	public List<CcCourseGradecompose> findGradecomposeBatch(List<Long> courseGradeComposeIds,Long batchId){
+		ArrayList<Object> params = new ArrayList<>();
+		StringBuilder sql = new StringBuilder("select distinct ccg.*, cg.name,cgb.name batchName,cgb.id batchId from " +  tableName + " ccg ");
+		sql.append("inner join " + CcGradecompose.dao.tableName + " cg on cg.id = ccg.gradecompose_id and cg.is_del = 0 ");
+		sql.append("left join cc_course_gradecompose_batch cgb on cgb.course_gradecompose_id=ccg.id and cgb.is_del=0 " );
+		sql.append("where  ccg.is_del = 0 and ccg.id in  ("+ CollectionKit.convert(courseGradeComposeIds, ",")+") ");
+		if (batchId !=null){
+			sql.append("and cgb.id=? ");
+			params.add(batchId);
+		}
+		sql.append("order by ccg.id asc");
+		return find(sql.toString(), params.toArray());
+	}
 	/**
 	 * 某门教师开课课程关联的成绩组成以及对应的比重
 	 * @param teacherCourseId

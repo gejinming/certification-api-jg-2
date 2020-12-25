@@ -148,7 +148,6 @@ public class EM00540 extends BaseApi implements IApi{
 			}
 
 		}
-		ccCourseGradecomposeIndication.set("max_score", maxScore);
 		ccCourseGradecomposeIndication.set("remark", remark);
 		ccCourseGradecomposeIndication.set("is_del", Boolean.FALSE);
 		

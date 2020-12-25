@@ -456,22 +456,29 @@ public class CcStudentService {
 	 * return 
 	 * 	Map<第几行，Map<第几列,Map<当前成绩组成细啊有几个考评点/考评点名称数组, 对应的数值>>> 
 	 */
-	public RowDefinition getEvaluateDefinition(CcTeacherCourse ccTeacherCourse, Integer startNaturalColumnIndex,Long courseGradeComposeId) {
+	public RowDefinition getEvaluateDefinition(CcTeacherCourse ccTeacherCourse, Integer startNaturalColumnIndex,List<Long> courseGradeComposeIds,Long batchId) {
 		//TODO 2020.12.16考评点分析法大改动跟考核成绩分析法差不多
 		Long teacherCourseId = ccTeacherCourse.getLong("id");
 		Long courseId = ccTeacherCourse.getLong("course_id");
 		
-		List<String> evaluteTypeNameList = new ArrayList<>();
+		List<String> gradecomposeNameList = new ArrayList<>();
 
 		//等级制级别，一个课程的所有成绩组成的等级制都是一样的
 		int hierarchyLevel=5;
-		//获取成绩组成
-		List<CcCourseGradecompose> ccCourseGradecomposes = CcCourseGradecompose.dao.findByTeacherCourseIdOrderBySort(teacherCourseId);
+		//获取成绩组成以及批次名称
+		List<CcCourseGradecompose> ccCourseGradecomposes = CcCourseGradecompose.dao.findGradecomposeBatch(courseGradeComposeIds,batchId);
 		for(CcCourseGradecompose temp : ccCourseGradecomposes) {
 			 hierarchyLevel = temp.getInt("hierarchy_level");
-			Long courseGradeComposeIds = temp.getLong("id");
-			String name = temp.getStr("name");
-			evaluteTypeNameList.add(name);
+			 String name;
+			 name = temp.getStr("name");
+			String batchName = temp.getStr("batchName");
+			if (batchName !=null){
+				name=name+"-"+batchName;
+			}
+			if (!gradecomposeNameList.contains(name)){
+				gradecomposeNameList.add(name);
+			}
+
 		}
 		//等级制名称
 		String[] levelName = new String[hierarchyLevel];
@@ -499,99 +506,22 @@ public class CcStudentService {
         RowDefinition.ColumnDefinition clazzname = RowDefinition.ColumnDefinition.createCommonColumn(3, "教学班名称");
 
 		RowDefinition.ValidateDefinition subGrade2Validate = new RowDefinition.ValidateDefinition(levelName);
-
-		RowDefinition.ColumnDefinition evaluteLevel = RowDefinition.ColumnDefinition.createCommonColumn(4, "考评点")
-				.setValidateDefinition(subGrade2Validate).setDataValidationDefinition(subGrade2Validate);
-
-        //RowDefinition.ValidateDefinition header3validate = new RowDefinition.ValidateDefinition(evaluteTypeNameList.toArray(new String[evaluteTypeNameList.size()]));
-
-
 		rowDefinition.addColumn(no);
 		rowDefinition.addColumn(studentno);
 		rowDefinition.addColumn(name);
 		rowDefinition.addColumn(clazzname);
-		rowDefinition.addColumn(evaluteLevel);
+		int size = gradecomposeNameList.size();
+		for (int i=0;i<gradecomposeNameList.size();i++){
+			String gradecomposeNames = gradecomposeNameList.get(i);
+			RowDefinition.ColumnDefinition gradecomposeName = RowDefinition.ColumnDefinition
+					.createGroupColumn(4+i, 4+i, gradecomposeNames)
+					.setIndexs(rowDefinition.getIndexs());
+			((RowDefinition.GroupColumnDefinition) gradecomposeName).addColumn(RowDefinition.ColumnDefinition.createCommonColumn(4+i,"考评点")
+					.setValidateDefinition(subGrade2Validate).setDataValidationDefinition(subGrade2Validate));
+			rowDefinition.addColumn(gradecomposeName);
+		}
 
-		/*List<Long> evaluteTypeAdded = new ArrayList<>();
-		// 遍历考评点类型
-		for(CcEvaluteType temp : ccEvaluteTypes) {
-			Integer type = temp.getInt("type");
-			Long ccEvaluteTypeId = temp.getLong("id");
-			
-			// 此考评点类型下的所有考评点
-			Integer number = 0;
-			List<CcEvalute> ccEvaluteTypeTemp = ccEvaluteTypeAndEvaluteMap.get(ccEvaluteTypeId);
-			String evaluteTypeName = evaluteTypeMap.get(ccEvaluteTypeId);
-			number = ccEvaluteTypeTemp.size();
-			
-			RowDefinition.ColumnDefinition evaluteType = RowDefinition.ColumnDefinition
-	                .createGroupColumn(firstNaturalColumnIndex - 1, firstNaturalColumnIndex - 2 + number, evaluteTypeName)
-	                .setIndexs(rowDefinition.getIndexs())
-	                .setValidateDefinition(header3validate);
-			rowDefinition.addColumn(evaluteType);
-			firstNaturalColumnIndex = firstNaturalColumnIndex + number;
-			
-			// 指标点也是按照次序增加，循环这个是为了排序
-			for(Long thisIndicationId : ccIndicationSortList) {
-				// 上一个指标点
-				// 遍历考评点类型-指标点
-				List<String> ccEvalutesTemp = ccTypeAndIndicationMap.get(ccEvaluteTypeId+"-"+thisIndicationId);
-				if(ccEvalutesTemp == null || ccEvalutesTemp.isEmpty()) {
-					continue;
-				}
-//				for(Map.Entry<String, List<String>> entry : ccTypeAndIndicationMap.entrySet()) {
-//					String key = entry.getKey();
-//					String keys [] = key.split("-");
-//					Long evaluteTypeId = Long.valueOf(keys[0]);
-//					Long indicationId = Long.valueOf(keys[1]);
-//					
-//					// 如果不是本次考评点类型的，节略过
-//					if(!ccEvaluteTypeId.equals(evaluteTypeId)) {
-//						continue;
-//					} 
-//					// 如果不是本次指标点，节略过
-//					if(!indicationId.equals(thisIndicationId)) {
-//						continue;
-//					}
-					
-					// 当前考评点类型和指标点下，所有的考评点
-//					List<String> ccEvalutesTemp = entry.getValue();
-					
-//					for(int indicationIndex = 0; secondNaturalColumnIndex != firstNaturalColumnIndex; indicationIndex++) {
-						// sencondMap2 赋值	
-						// 数量是当前考评点类型和指标点下的个数
-						number = ccEvalutesTemp.size();
-						List<String> evaluteTypeIdAndIndicationNameList = ccIndicationAndEvaluteMap.get(ccEvaluteTypeId);
-						RowDefinition.ValidateDefinition subGrade2Validate = new RowDefinition.ValidateDefinition(evaluteTypeIdAndIndicationNameList.toArray(new String[evaluteTypeIdAndIndicationNameList.size()]));
-						
-						RowDefinition.ColumnDefinition cloumn = RowDefinition.ColumnDefinition
-							.createGroupColumn(secondNaturalColumnIndex - 1, secondNaturalColumnIndex - 2 + number, ccIndicationMap.get(thisIndicationId))
-							.setIndexs(rowDefinition.getIndexs())
-							.setValidateDefinition(subGrade2Validate)
-							;
-						((GroupColumnDefinition) evaluteType).addColumn(cloumn);
-						
-						secondNaturalColumnIndex = secondNaturalColumnIndex + number;
-						for(int evaluteIndex = 0; secondNaturalColumnIndex != thirdNaturalColumnIndex; evaluteIndex++) {
-							// sencondMap3 赋值	
-//							Map<String, Object> thirdMap3 = new HashMap<>();
-//							thirdMap3.put("value", ccEvalutesTemp.toArray(new String[ccEvalutesTemp.size()]));
-//							thirdMap3.put("number", 1);
-//							sencondMap3.put(thirdNaturalColumnIndex, thirdMap3);
-							
-							RowDefinition.ValidateDefinition subHeader2Validate = new RowDefinition.ValidateDefinition(ccEvalutesTemp.toArray(new String[ccEvalutesTemp.size()]));
-							
-							RowDefinition.ColumnDefinition evalute = RowDefinition.ColumnDefinition
-								.createCommonColumn(thirdNaturalColumnIndex - 1, ccEvalutesTemp.get(evaluteIndex))
-								.setValidateDefinition(subHeader2Validate)
-								;
-							((GroupColumnDefinition) cloumn).addColumn(evalute);
-							thirdNaturalColumnIndex++;
-						}
-//					}
-//				}
-			}
-		}*/
+
 		
 		return rowDefinition;
 	}

@@ -7,21 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.gnet.model.admin.*;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
-import com.gnet.model.admin.CcCourseGradeComposeDetail;
-import com.gnet.model.admin.CcCourseGradecompose;
-import com.gnet.model.admin.CcCourseGradecomposeDetailIndication;
-import com.gnet.model.admin.CcCourseGradecomposeIndication;
-import com.gnet.model.admin.CcCourseGradecomposeStudetail;
-import com.gnet.model.admin.CcEvalute;
-import com.gnet.model.admin.CcEvaluteLevel;
-import com.gnet.model.admin.CcEvaluteType;
-import com.gnet.model.admin.CcGradecomposeIndicationScoreRemark;
-import com.gnet.model.admin.CcScoreStuIndigrade;
-import com.gnet.model.admin.CcStudentEvalute;
-import com.gnet.model.admin.CcTeacherCourse;
 import com.gnet.plugin.id.IdGenerate;
 import com.gnet.utils.DictUtils;
 import com.gnet.utils.SpringContextHolder;
@@ -235,13 +224,16 @@ public class CcTeacherCourseService {
 		}
 		
 		Integer type = ccTeacherCourse.getInt("result_type");
-		if(type == CcTeacherCourse.RESULT_TYPE_SCORE || type == CcTeacherCourse.RESULT_TYPE_SCORE2) {
-			// 考核分析法的重置
-			return forceResetScore(teacherCourseId);
-		} else if(type == CcTeacherCourse.RESULT_TYPE_EVALUATE) {
+		//TODO 2020.12.18考评点分析法跟考课分析法只是录入方式和存的数据不同，其他相同
+		if(type == CcTeacherCourse.RESULT_TYPE_SCORE || type == CcTeacherCourse.RESULT_TYPE_SCORE2 || type == CcTeacherCourse.RESULT_TYPE_EVALUATE) {
+			// 考核分析法的重置和考评点分析法的重置
+			return forceResetScore(teacherCourseId,type);
+		}
+		/*else if(type == CcTeacherCourse.RESULT_TYPE_EVALUATE) {
 			// 考评点分析法的重置
 			return forceResetEvalute(teacherCourseId);
-		} else {
+		} */
+		else {
 			returnMap.put("isSuccess", result);
 			return returnMap;
 		}
@@ -571,7 +563,7 @@ public class CcTeacherCourseService {
 	}
 	
 	/**
-	 * 强制重置考核分析法的成绩组成信息
+	 * 强制重置考核分析法或考评点的成绩组成信息
 	 * @param teacherCourseId
 	 * @return Map<String, Object> {
 	 * 				"isSuccess" : Boolean,
@@ -580,7 +572,7 @@ public class CcTeacherCourseService {
 	 * @author SY 
 	 * @version 创建时间：2017年10月19日 下午4:52:50 
 	 */
-	public Map<String, Object> forceResetScore(Long teacherCourseId) {
+	public Map<String, Object> forceResetScore(Long teacherCourseId,Integer type) {
 		Map<String, Object> returnMap = new HashMap<>();
 		Boolean result = Boolean.TRUE;
 		returnMap.put("isSuccess", result);
@@ -607,6 +599,25 @@ public class CcTeacherCourseService {
 				returnMap.put("isSuccess", false);
 				return returnMap;
 			}
+		}
+		//评分表分析法成绩删除
+		if (type==CcTeacherCourse.RESULT_TYPE_EVALUATE){
+            List<CcStudentEvalute> ccStudentEvaluteList = CcStudentEvalute.dao.findFilteredByColumnIn("course_gradecompose_id", courseGradecomposeIds);
+            if (ccStudentEvaluteList.size()>0){
+                Boolean isSuccess = CcStudentEvalute.dao.deleteAllByColumn("course_gradecompose_id", courseGradecomposeIds, date);
+                if(!isSuccess) {
+                    TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                    returnMap.put("errorMessage", "评分表分析法存在学生成绩删除失败。");
+                    returnMap.put("isSuccess", false);
+                    return returnMap;
+                }
+                if (!CcEduclassStudentStudy.dao.deleteAllByColumn("course_gradecompose_id", courseGradecomposeIds, date)){
+                    TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                    returnMap.put("errorMessage", "评分表分析法学生备注信息成绩删除失败。");
+                    returnMap.put("isSuccess", false);
+                    return returnMap;
+                }
+            }
 		}
 		// 获取每个成绩组成的和开课目标的关系 
 		List<CcCourseGradecomposeIndication> ccCourseGradecomposeIndications = CcCourseGradecomposeIndication.dao.findByCourseGradecomposeIds(courseGradecomposeIds);
@@ -672,7 +683,55 @@ public class CcTeacherCourseService {
 				returnMap.put("isSuccess", false);
 				return returnMap;
 			}
-		}
+			//2020.12.18删除批次信息
+            List<CcCourseGradecomposeBatch> batchList = CcCourseGradecomposeBatch.dao.findFilteredByColumnIn("course_gradecompose_id", courseGradecomposeIds);
+            Long[] batchIds = new Long[batchList.size()];
+            for(int i = 0; i< batchList.size(); i++) {
+                CcCourseGradecomposeBatch temp = batchList.get(i);
+                batchIds[i] = temp.getLong("id");
+            }
+            if (batchList.size()>0){
+                //批次关联的课程目标
+                List<CcCourseGradecomposeBatchIndication> batchIndicationList = CcCourseGradecomposeBatchIndication.dao.findFilteredByColumnIn("batch_id", batchIds);
+                Long[] batchIndicationIds = new Long[batchIndicationList.size()];
+                for(int i = 0; i< batchIndicationList.size(); i++) {
+                    CcCourseGradecomposeBatchIndication temp = batchIndicationList.get(i);
+                    batchIndicationIds[i] = temp.getLong("id");
+                }
+                //删除批次的成绩和批次关联的课程目标
+                if (batchIndicationList.size()>0){
+                    // 检查是否有学生成绩，有再删除
+                    List<CcScoreStuIndigradeBatch> ccScoreStuIndigradeBatchList = CcScoreStuIndigradeBatch.dao.findFilteredByColumnIn("gradecompose_indication_id", batchIndicationIds);
+                    if (ccScoreStuIndigradeBatchList.size()>0){
+                        Boolean isSuccess = CcScoreStuIndigradeBatch.dao.deleteAllByColumn("gradecompose_indication_id", batchIndicationIds, date);
+                        if(!isSuccess) {
+                            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                            returnMap.put("isSuccess", Boolean.FALSE);
+                            returnMap.put("errorMessage", "批次下面存在学生成绩删除失败。");
+                            return returnMap;
+                        }
+                    }
+                    //删除批次关联的课程目标
+                    Boolean isSuccess = CcCourseGradecomposeBatchIndication.dao.deleteAllByColumn("batch_id", batchIds, date);
+                    if(!isSuccess) {
+                        TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                        returnMap.put("isSuccess", Boolean.FALSE);
+                        returnMap.put("errorMessage", "批次关联的课程目标删除失败。");
+                        return returnMap;
+                    }
+                }
+
+
+                //删除批次
+                if(!CcCourseGradecomposeBatch.dao.deleteAll(batchIds, date)){
+                    TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                    returnMap.put("errorMessage", "批次删除失败。");
+                    returnMap.put("isSuccess", false);
+                    return returnMap;
+                }
+            }
+
+        }
 		
 		
 		
@@ -718,7 +777,6 @@ public class CcTeacherCourseService {
 	 * 			接收人的教师开课编号
 	 * @param sharerTeacherCourseId
 	 * 			分享人的教师开课编号
-	 * @param teacherCourse
 	 * 			分享人的教师开课信息
 	 * @return Map<String, Object> {
 	 * 				"isSuccess" : Boolean,
@@ -753,13 +811,16 @@ public class CcTeacherCourseService {
 			returnMap.put("isSuccess", Boolean.FALSE);
 			returnMap.put("errorMessage", "接收人和分享人的开课课程的达成度计算类型不一致。");
 			return returnMap;
-		} else if(type == CcTeacherCourse.RESULT_TYPE_SCORE || type == CcTeacherCourse.RESULT_TYPE_SCORE2) {
+		}
+		//2020.12.18评分表分析法改动与考核分析法格式类似都有成绩组成，只有成绩录入不一样
+		else if(type == CcTeacherCourse.RESULT_TYPE_SCORE || type == CcTeacherCourse.RESULT_TYPE_SCORE2 ||type == CcTeacherCourse.RESULT_TYPE_EVALUATE) {
 			// 考核分析法的复制
-			return copyScore(teacherCourseId, sharerTeacherCourseId);
-		} else if(type == CcTeacherCourse.RESULT_TYPE_EVALUATE) {
+			return copyScore(teacherCourseId, sharerTeacherCourseId,type);
+		}
+		/*else if(type == CcTeacherCourse.RESULT_TYPE_EVALUATE) {
 			// 考评点分析法的复制
 			return copyEvalute(teacherCourseId, sharerTeacherCourseId);
-		} else {
+		}*/ else {
 			returnMap.put("isSuccess", result);
 			return returnMap;
 		}
@@ -867,7 +928,7 @@ public class CcTeacherCourseService {
 	}
 
 	/**
-	 * 拷贝考核分析法的成绩组成信息
+	 * 拷贝考核分析法和评分表分析法的成绩组成信息
 	 * @param teacherCourseId 
 	 * @param sharerTeacherCourseId
 	 * @return Map<String, Object> {
@@ -877,7 +938,7 @@ public class CcTeacherCourseService {
 	 * @author SY 
 	 * @version 创建时间：2017年10月20日11:54:04 
 	 */
-	public Map<String, Object> copyScore(Long teacherCourseId, Long sharerTeacherCourseId) {
+	public Map<String, Object> copyScore(Long teacherCourseId, Long sharerTeacherCourseId,Integer type) {
 		Map<String, Object> returnMap = new HashMap<>();
 		Boolean result = Boolean.TRUE;
 		returnMap.put("isSuccess", result);
@@ -918,6 +979,7 @@ public class CcTeacherCourseService {
 		Map<Long, Long> courseGradecomposeIdOldAndNew = new HashMap<>();
 		Map<Long, Long> CcCourseGradeComposeDetailIdOldAndNew = new HashMap<>();
 		Map<Long, Long> CcCourseGradeComposeIndicationIdOldAndNew = new HashMap<>();
+
 		// CcCourseGradecompose
 		for(CcCourseGradecompose temp : courseGradecomposes) {
 			Long courseGradecomposeId = temp.getLong("id");
@@ -946,15 +1008,66 @@ public class CcTeacherCourseService {
 			
 			CcCourseGradeComposeIndicationIdOldAndNew.put(courseGradecomposeIndicationId, id);
 		}
+        //2020.12.18把批次信息也分享过去
+        Map<Long, Long> CcCourseGradecomposeBatchOldAndNew = new HashMap<>();
+        //批次信息
+        List<CcCourseGradecomposeBatch> ccCourseGradecomposeBatchList = CcCourseGradecomposeBatch.dao.findFilteredByColumnIn("course_gradecompose_id", courseGradecomposeIds);
+        Long[] batchIds = new Long[ccCourseGradecomposeBatchList.size()];
+        if (ccCourseGradecomposeBatchList.size()>0){
+            int i=0;
+            for(CcCourseGradecomposeBatch temp : ccCourseGradecomposeBatchList) {
+                Long oldBatchId = temp.getLong("id");
+                batchIds[i] =oldBatchId;
+                Long courseGradecomposeId = temp.getLong("course_gradecompose_id");
+                Long id = idGenerate.getNextValue();
+                temp.set("id", id);
+                temp.set("create_date", date);
+                temp.set("modify_date", date);
+                temp.set("course_gradecompose_id", courseGradecomposeIdOldAndNew.get(courseGradecomposeId));
+                i++;
+                CcCourseGradecomposeBatchOldAndNew.put(oldBatchId, id);
+            }
+            //批次信息指标点信息
+            List<CcCourseGradecomposeBatchIndication> ccCourseGradecomposeBatchIndicationList = CcCourseGradecomposeBatchIndication.dao.findFilteredByColumnIn("batch_id", batchIds);
+            if (ccCourseGradecomposeBatchIndicationList.size()>0) {
+                for (CcCourseGradecomposeBatchIndication temp : ccCourseGradecomposeBatchIndicationList) {
+                    Long oldBatchIndicationId = temp.getLong("id");
+                    Long oldbatchId = temp.getLong("batch_id");
+                    Long id = idGenerate.getNextValue();
+                    temp.set("id", id);
+                    temp.set("create_date", date);
+                    temp.set("modify_date", date);
+                    temp.set("batch_id", CcCourseGradecomposeBatchOldAndNew.get(oldbatchId));
+                }
+                // 保存CcCourseGradecomposeBatchIndication
+                if (!CcCourseGradecomposeBatchIndication.dao.batchSave(ccCourseGradecomposeBatchIndicationList)) {
+                    TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                    returnMap.put("errorMessage", "批次关联的课程目标保存失败。");
+                    returnMap.put("isSuccess", false);
+                    return returnMap;
+                }
+            }
+            // 保存CcCourseGradecomposeBatch
+            if (!CcCourseGradecomposeBatch.dao.batchSave(ccCourseGradecomposeBatchList)) {
+                TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                returnMap.put("errorMessage", "批次信息保存失败。");
+                returnMap.put("isSuccess", false);
+                return returnMap;
+            }
+        }
 		// CcCourseGradeComposeDetail
 		for(CcCourseGradeComposeDetail temp : ccCourseGradeComposeDetailList) {
 			Long oldCourseGradeComposeDetailId = temp.getLong("id");
 			Long courseGradecomposeId = temp.getLong("course_gradecompose_id");
+            Long oldbatchId = temp.getLong("batch_id");
 			Long id = idGenerate.getNextValue();
 			temp.set("id", id);
 			temp.set("create_date", date);
 			temp.set("modify_date", date);
 			temp.set("course_gradecompose_id", courseGradecomposeIdOldAndNew.get(courseGradecomposeId));
+			if (oldbatchId!=null){
+                temp.set("batch_id", CcCourseGradecomposeBatchOldAndNew.get(oldbatchId));
+            }
 			
 			CcCourseGradeComposeDetailIdOldAndNew.put(oldCourseGradeComposeDetailId, id);
 		}
@@ -1003,7 +1116,7 @@ public class CcTeacherCourseService {
 				return returnMap;
 			}
 		}
-		
+
 		// 全部增加！
 		// 保存CcCourseGradecompose
 		if(!CcCourseGradecompose.dao.batchSave(courseGradecomposes)){

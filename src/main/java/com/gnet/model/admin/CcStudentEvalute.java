@@ -403,5 +403,11 @@ public class CcStudentEvalute extends DbModel<CcStudentEvalute> {
 		sql.append("where (cse.modify_date > cree.statistics_date or cel.modify_date > cree.statistics_date or ce.weight != cree.weight or cree.id is null or cec.student_num_change_date > cree.statistics_date ) ");
 		return sql;
 	}
-	
+	//---------------TODO 2020.12.07 以上方法都失效了，更改了评分表分析法的录入模式和保存格式
+
+	public List<CcStudentEvalute> findCourseGradecomposeList(List<Long> courseGradeComposeIds){
+		StringBuilder sql = new StringBuilder("select * from " + tableName + " where is_del=0 and course_gradecompose_id in (" + CollectionKit.convert(courseGradeComposeIds, ",") + ") ");
+		return find(sql.toString());
+
+	}
 }

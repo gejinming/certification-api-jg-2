@@ -143,7 +143,7 @@ public class EM00746 extends BaseApi implements IApi {
                 //}, "/Users/xuqiang/Work/temp/output2.xls");
     		} else {
     			// 评分表
-    			RowDefinition rowDefinition = ccStudentService.getEvaluateDefinition(ccTeacherCourse, startNaturalColumnIndex,null);
+    			RowDefinition rowDefinition = ccStudentService.getEvaluateDefinition(ccTeacherCourse, startNaturalColumnIndex,null,null);
     			// 获取考评点
     			// 按照index排序的数据
     			final List<CcEvalute> ccEvalutes = CcEvalute.dao.findByTeacherCourse(teacherCourseId);
