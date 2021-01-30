@@ -37,6 +37,8 @@ public class EM01213 extends BaseApi implements IApi {
 		Integer periodDate = paramsIntegerFilter(param.get("periodDate"));
 		//开启教师id
 		Long teacherId = paramsLongFilter(param.get("teacherId"));
+		//1毕业设计、2工程实习
+		Long courseType = paramsLongFilter(param.get("courseType"));
 		if (courseId==null ||classId == null){
 			return renderFAIL("0250", response, header);
 		}
@@ -46,10 +48,14 @@ public class EM01213 extends BaseApi implements IApi {
 		if (teacherId==null){
 			return renderFAIL("0250", response, header);
 		}
+		if (courseType==null){
+			return renderFAIL("0250", response, header);
+		}
 		//学校id
 		CcTeacher teacher = CcTeacher.dao.findAllById(teacherId);
 
 		Object schoolId = teacher.get("schoolId");
+		Long majorId = teacher.getLong("major_id");
 		Date date = new Date();
 		IdGenerate idGenerate = SpringContextHolder.getBean(IdGenerate.class);
 		CcCoursePeriode coursePeriode = CcCoursePeriode.dao.findCoursePeriode(courseId,classId);
@@ -61,7 +67,9 @@ public class EM01213 extends BaseApi implements IApi {
 		ccCoursePeriode.set("modify_date",date);
 		ccCoursePeriode.set("is_del",Boolean.FALSE);
 		ccCoursePeriode.set("school_id",schoolId);
+		ccCoursePeriode.set("major_id",majorId);
 		ccCoursePeriode.set("class_id",classId);
+		ccCoursePeriode.set("course_type",courseType);
 		if (coursePeriode == null){
 			ccCoursePeriode.set("id",idGenerate.getNextValue());
 			boolean isSuccess = ccCoursePeriode.save();

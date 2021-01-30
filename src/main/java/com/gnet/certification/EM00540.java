@@ -124,9 +124,10 @@ public class EM00540 extends BaseApi implements IApi{
 		ccCourseGradecomposeIndication.set("course_gradecompose_id", courseGradecomposeId);
 		ccCourseGradecomposeIndication.set("weight", weight);
 		//如果达成度计算类型为评分表分析那maxScore传的就是比例系数
-		if (resultType == 1){
+		if (resultType == 1 || resultType==3){
 			ccCourseGradecomposeIndication.set("max_score", maxScore);
 		}else{
+			//如果达成度计算类型为评分表分析那maxScore传的就是比例系数
 			//直接录入类型的是直接写比例系数的，其他的需要统计，更新课程目标的满分值是在EM01237计算的
 			if (inputType==1){
 				//判断比例系数是否大于0小于1

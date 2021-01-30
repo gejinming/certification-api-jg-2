@@ -29,7 +29,7 @@ public class JwtTokenUtil {
         claims.put("role",role);
         //签发时间
         Date iatDate = new Date();
-        //过期时间  120分钟后过期
+        //过期时间
         long now = System.currentTimeMillis();
         //6个小时过期
         long exp = now + 1000*60*60*6;

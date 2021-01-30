@@ -51,9 +51,9 @@ public class EM00016 extends BaseApi implements IApi  {
 		if (id == null) {
 			return renderFAIL("0017", response, header);
 		}
-        if (userRoleId == null) {
+        /*if (userRoleId == null) {
             return renderFAIL("0017", response, header);
-        }
+        }*/
         User user = new User();
         String officeIds="";
         UserRole userRole = UserRole.dao.findFirstByColumn("user_id", id);
@@ -61,8 +61,9 @@ public class EM00016 extends BaseApi implements IApi  {
         if (userRole != null && StrKit.notBlank(userRole.getStr("roles"))) {
             roleList = Lists.newArrayList(CollectionKit.convert(userRole.getStr("roles"), ","));
         }
-        if(userRoleId==1){
-            User temp = User.dao.findFilteredById(id);
+        //if(userRoleId==1){
+        User temp = User.dao.findFilteredById(id);
+        if(temp !=null){
             officeIds = temp.getStr("office_ids");
             user.put("id", temp.getLong("id"));
             user.put("createDate", temp.getDate("create_date"));

@@ -118,8 +118,8 @@ public class EM00001 extends BaseApi implements IApi {
         Claims claims = Jwts.parser()
                 .setSigningKey("zheJingJinFangSchool")
                 .parseClaimsJws(token).getBody();
-        System.out.println("id:"+claims.get("role"));
-        System.out.println("subject:"+claims.getSubject());
+        System.out.println("role:"+claims.get("role"));
+        System.out.println("id:"+claims.getSubject());
         SimpleDateFormat sdf=new SimpleDateFormat("yyyy‐MM‐dd hh:mm:ss");
         System.out.println("签发时间:"+sdf.format(claims.getIssuedAt()));
         System.out.println("过期时间:"+sdf.format(claims.getExpiration()));

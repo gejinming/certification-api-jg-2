@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.gnet.plugin.setting.impl.cache.J2SettingCacheImpl;
 import com.gnet.plugin.setting.impl.db.JFinalSettingDbImpl;
+import org.openxmlformats.schemas.drawingml.x2006.main.STAngle;
 
 /**
  * 配置管理类

@@ -121,10 +121,10 @@ public class EM00542 extends BaseApi implements IApi{
 	    courseGradecomposeIndication.set("indication_id", indicationId);
 	    courseGradecomposeIndication.set("course_gradecompose_id", courseGradecomposeId);
 	    courseGradecomposeIndication.set("weight", weight);
-	    //如果达成度计算类型为评分表分析那maxScore传的就是比例系数
-		if (resultType == 1){
+		if (resultType == 1 || resultType==3){
 			courseGradecomposeIndication.set("max_score", maxScore);
 		}else{
+			//如果达成度计算类型为评分表分析那maxScore传的就是比例系数
 			//判断比例系数是否大于0小于1
 			if(PriceUtils.greaterThan(CcCourseGradecomposeIndication.MIN_WEIGHT, maxScore) || PriceUtils.greaterThan(maxScore, CcCourseGradecomposeIndication.MAX_WEIGHT)){
 				return renderFAIL("0376", response, header);
